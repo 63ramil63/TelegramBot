@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TelegramBot extends TelegramLongPollingBot {
-
+    final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     ParseSite parseSite = new ParseSite();
 
     @Override
@@ -34,29 +34,78 @@ public class TelegramBot extends TelegramLongPollingBot {
             message.setReplyMarkup(setMainMenuButtons());
             message.setChatId(update.getMessage().getChatId());
             try {
-                message.setText(getLessons());
+                message.setText("Выберите нужную для вас функцию");
                 execute(message);
-            } catch (TelegramApiException | IOException e) {
+            } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
     public void sendResponse(Long chatId, String data) throws IOException, TelegramApiException {
-        if(data.equals("LessonButtonPressed")){
-            SendMessage message = new SendMessage();
-            message.setReplyMarkup(setMainMenuButtons());
-            message.setChatId(chatId);
-            message.setText(getLessons());
-            execute(message);
+        SendMessage message = new SendMessage();
+        switch (data){
+            case "LessonButtonPressed":
+                message.setReplyMarkup(setLessonMenuButtons());
+                message.setChatId(chatId);
+                message.setText("Выберите дату");
+                execute(message);
+                break;
+            case "TodayLessonsButtonPressed":
+                message.setReplyMarkup(setLessonMenuButtons());
+                message.setChatId(chatId);
+                message.setText(getLessons(0));
+                execute(message);
+                break;
+            case "TomorrowLessonsButtonPressed":
+                message.setReplyMarkup(setLessonMenuButtons());
+                message.setChatId(chatId);
+                message.setText(getLessons(1));
+                execute(message);
+                break;
+            case "BackButtonPressed":
+                message.setReplyMarkup(setMainMenuButtons());
+                message.setChatId(chatId);
+                message.setText("Выберите функцию");
+                execute(message);
+                break;
         }
     }
 
-    public String getLessons() throws IOException {
-        LocalDate localDate = LocalDate.now();
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    public String getLessons(int days) throws IOException {
+        LocalDate localDate = LocalDate.now().plusDays(days);
         String day = localDate.format(dateTimeFormatter);
         return parseSite.getDay(day);
+    }
+
+    private InlineKeyboardMarkup setLessonMenuButtons(){
+        InlineKeyboardButton today = setButton("На сегодня", "TodayLessonsButtonPressed");
+        InlineKeyboardButton tomorrow = setButton("На завтра", "TomorrowLessonsButtonPressed");
+        //создание кнопок и добавление к ним возвращщаемого значения при нажатии
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        row.add(today);
+        row.add(tomorrow);
+        //добавляем в ряд кнопки
+        InlineKeyboardButton back = setButton("Назад", "BackButtonPressed");
+        //кнопка для возвращения в глав меню
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        row1.add(back);
+        //добавление кнопки назад
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        keyboard.add(row);
+        keyboard.add(row1);
+        //добавление рядов в клаву
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(keyboard);
+        //установка клавиатуры в markup
+        return markup;
+    }
+
+    private InlineKeyboardButton setButton(String text, String callBackData){
+        InlineKeyboardButton button = new InlineKeyboardButton();
+        button.setText(text);
+        button.setCallbackData(callBackData);
+        return button;
     }
 
     private InlineKeyboardMarkup setMainMenuButtons(){

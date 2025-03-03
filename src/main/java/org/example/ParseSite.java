@@ -18,7 +18,7 @@ public class ParseSite {
                 return _day + getLesson(num);
             }
         }
-        return "ошибка";
+        return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=141";
     }
 
     public String getLesson(int num) {
