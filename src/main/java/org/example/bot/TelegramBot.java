@@ -5,6 +5,7 @@ import org.example.config.Config;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -24,12 +25,13 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if(update.hasCallbackQuery()){
             String data = update.getCallbackQuery().getData();
+            long messageId = update.getCallbackQuery().getMessage().getMessageId();
             try {
-                sendResponse(update.getCallbackQuery().getMessage().getChatId(), data);
+                sendResponse(update.getCallbackQuery().getMessage().getChatId(), data, messageId);
             }catch (IOException | TelegramApiException e){
                 throw new RuntimeException(e);
             }
-        }else{
+        }else if(update.getMessage().getText().equals("/start")){
             SendMessage message = new SendMessage();
             message.setReplyMarkup(setMainMenuButtons());
             message.setChatId(update.getMessage().getChatId());
@@ -42,8 +44,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public void sendResponse(Long chatId, String data) throws IOException, TelegramApiException {
-        SendMessage message = new SendMessage();
+    public void sendResponse(Long chatId, String data, long messageID) throws IOException, TelegramApiException {
+        EditMessageText message = new EditMessageText();
+        message.setMessageId((int) messageID);
         switch (data){
             case "LessonButtonPressed":
                 message.setReplyMarkup(setLessonMenuButtons());
