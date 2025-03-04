@@ -1,9 +1,7 @@
 package org.example.bot;
 
 import org.example.ParseSite;
-import org.example.config.Config;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -11,15 +9,34 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class TelegramBot extends TelegramLongPollingBot {
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     ParseSite parseSite = new ParseSite();
+    private String bot_token;
+    private String bot_name;
+
+    public TelegramBot(){
+
+    }
+
+    public void loadConfig(){
+        Properties properties = new Properties();
+        try(FileInputStream fileInputStream = new FileInputStream("config.properties")){
+            properties.load(fileInputStream);
+            bot_token = properties.getProperty("bot_token");
+            bot_name = properties.getProperty("bot_name");
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -132,11 +149,11 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return Config.getBotName();
+        return bot_name;
     }
 
     @Override
     public String getBotToken(){
-        return Config.getToken();
+        return bot_token;
     }
 }
