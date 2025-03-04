@@ -44,39 +44,40 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public void sendResponse(Long chatId, String data, long messageID) throws IOException, TelegramApiException {
+    public void sendResponse(long chatId, String data, long messageID) throws IOException, TelegramApiException {
         EditMessageText message = new EditMessageText();
         message.setMessageId((int) messageID);
         switch (data){
             case "LessonButtonPressed":
-                message.setReplyMarkup(setLessonMenuButtons());
-                message.setChatId(chatId);
-                message.setText("Выберите дату");
-                execute(message);
+                sendMessage(message, setLessonMenuButtons(), chatId, "Выберите дату");
                 break;
             case "TodayLessonsButtonPressed":
-                message.setReplyMarkup(setLessonMenuButtons());
-                message.setChatId(chatId);
-                message.setText(getLessons(0));
-                execute(message);
+                sendMessage(message, setLessonMenuButtons(), chatId, getLessons());
                 break;
             case "TomorrowLessonsButtonPressed":
-                message.setReplyMarkup(setLessonMenuButtons());
-                message.setChatId(chatId);
-                message.setText(getLessons(1));
-                execute(message);
+                sendMessage(message, setLessonMenuButtons(), chatId, getLessons(1));
                 break;
             case "BackButtonPressed":
-                message.setReplyMarkup(setMainMenuButtons());
-                message.setChatId(chatId);
-                message.setText("Выберите функцию");
-                execute(message);
+                sendMessage(message, setMainMenuButtons(), chatId, "Выберите функцию");
                 break;
         }
     }
-
+    //установка настроек сообщения
+    private void sendMessage(EditMessageText message,InlineKeyboardMarkup keyboardMarkup, long chatId, String text) throws TelegramApiException {
+        message.setReplyMarkup(keyboardMarkup);
+        message.setChatId(chatId);
+        message.setText(text);
+        execute(message);
+    }
+    //получение расписания на завтра
     public String getLessons(int days) throws IOException {
         LocalDate localDate = LocalDate.now().plusDays(days);
+        String day = localDate.format(dateTimeFormatter);
+        return parseSite.getDay(day);
+    }
+    //получение расписания на сегодня
+    public String getLessons() throws IOException {
+        LocalDate localDate = LocalDate.now();
         String day = localDate.format(dateTimeFormatter);
         return parseSite.getDay(day);
     }
