@@ -6,16 +6,20 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 
+
 public class ParseSite {
     private Document doc;
+
     public String getDay(String _day) throws IOException {
+        System.out.println("get Day");
         doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2&obj=141").userAgent("Chrome").get();
         int num = 1;
         while(num < 60){
             Elements day = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
             num ++;
             if(day.text().contains(_day)){
-                return _day + getLesson(num);
+                String lessons = getLesson(num);
+                return _day + lessons;
             }
         }
         return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=141";
@@ -35,4 +39,6 @@ public class ParseSite {
         }
         return lessons;
     }
+
+
 }
