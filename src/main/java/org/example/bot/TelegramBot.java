@@ -65,7 +65,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
         }else if(update.getMessage().hasDocument()){
             Document document = update.getMessage().getDocument();
-            saveFile(document, update.getMessage().getChatId());
+            saveFile(document, update.getMessage().getChatId(), update.getMessage().getCaption());
         }else if(update.getMessage().getText().equals("/start")){
             SendMessage message = new SendMessage();
             message.setReplyMarkup(setMainMenuButtons());
@@ -79,16 +79,27 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public void saveFile(Document document, long chatId){
+    public void saveFile(Document document, long chatId, String text){
         try {
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
             //обращение к TelegramAPI для получения инфы о файле
+
             String fullFilePath = "https://api.telegram.org/file/bot" + bot_token + "/" + filePath;
             InputStream is = new URL(fullFilePath).openStream();
             //открываем поток для чтения
-            Files.copy(is, Paths.get(path + document.getFileName()));
+
+            String fileName = document.getFileName();
+            String extension = fileName.substring(fileName.lastIndexOf("."));
+            //получаем расширение файла
+
+            if(!text.isEmpty()) {
+                Files.copy(is, Paths.get(path + text + extension));
+            }else{
+                Files.copy(is, Paths.get(path + fileName));
+            }
             //копируем файл из потока в путь
+
             is.close();
             sendResponse(chatId, "FileSaved");
         } catch (TelegramApiException | IOException e) {
