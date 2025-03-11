@@ -1,9 +1,15 @@
 package org.example.bot;
 
+import org.example.Files.FilesAndFolders;
 import org.example.ParseSite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessages;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -28,13 +34,16 @@ import java.util.concurrent.TimeUnit;
 
 
 public class TelegramBot extends TelegramLongPollingBot {
+    private static final Logger log = LoggerFactory.getLogger(TelegramBot.class);
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     ParseSite parseSite = new ParseSite();
     private final HashMap<String, CachedLessons> cache = new HashMap<>();
+    private HashMap<Long, Integer> lastMessageId = new HashMap<>();
+    public HashMap<Long, String> selectedPath = new HashMap<>();
     private String bot_token;
     private String bot_name;
     private String duration;
-    private String path;
+    public static String path;
 
     public TelegramBot(){
         loadConfig();
@@ -49,37 +58,80 @@ public class TelegramBot extends TelegramLongPollingBot {
             duration = properties.getProperty("duration");
             path = properties.getProperty("path");
         }catch (IOException e){
-            e.printStackTrace();
+            log.error("e: ", e);
         }
     }
 
     @Override
     public void onUpdateReceived(Update update) {
         if(update.hasCallbackQuery()){
+            //getCallBackQuery дает те же возможности что и message, но получить message можно только из CallBackQuery.getMessage
+            long chatId = update.getCallbackQuery().getMessage().getChatId();
             String data = update.getCallbackQuery().getData();
-            long messageId = update.getCallbackQuery().getMessage().getMessageId();
-            try {
-                sendResponse(update.getCallbackQuery().getMessage().getChatId(), data, messageId);
-            }catch (IOException | TelegramApiException e){
-                throw new RuntimeException(e);
+            System.out.println(data);
+            if(data.contains("Folder")){
+                try {
+                    long messageId = update.getCallbackQuery().getMessage().getMessageId();
+                    sendEditMessageResponse(chatId, data, messageId);
+                }catch (IOException | TelegramApiException e){
+                    throw new RuntimeException(e);
+                }
+            }else if(data.equals("FileButtonPressed")){
+                try {
+                    long messageId = update.getCallbackQuery().getMessage().getMessageId();
+                    sendEditMessageResponse(chatId, data, messageId);
+                }catch (IOException | TelegramApiException e){
+                    throw new RuntimeException(e);
+                }
+            }else if(data.contains("File")){
+                try {
+                    int messageId = update.getCallbackQuery().getMessage().getMessageId();
+                    deleteMessage(chatId, messageId);
+                    SendDocument sendDocument = FilesAndFolders.sendMessageWithDoc(data, chatId);
+                    execute(sendDocument);
+                    sendNewMessageResponse(chatId, "/start");
+                } catch (TelegramApiException e) {
+                    try {
+                        sendNewMessageResponse(chatId, "/error");
+                    } catch (TelegramApiException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    System.out.println(e);
+                    throw new RuntimeException(e);
+
+                }
+            }else{
+                try {
+                    long messageId = update.getCallbackQuery().getMessage().getMessageId();
+                    sendEditMessageResponse(chatId, data, messageId);
+                } catch (IOException | TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }else if(update.getMessage().hasDocument()){
-            Document document = update.getMessage().getDocument();
-            saveFile(document, update.getMessage().getChatId(), update.getMessage().getCaption());
+            long chatId = update.getMessage().getChatId();
+            if(selectedPath.containsKey(chatId) && !selectedPath.get(chatId).isEmpty()) {
+                Document document = update.getMessage().getDocument();
+                saveFile(document, chatId, update.getMessage().getCaption());
+            }else{
+                SendMessage message = new SendMessage();
+                try {
+                    sendMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
+                } catch (TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }else if(update.getMessage().getText().equals("/start")){
-            SendMessage message = new SendMessage();
-            message.setReplyMarkup(setMainMenuButtons());
-            message.setChatId(update.getMessage().getChatId());
+            long chatId = update.getMessage().getChatId();
             try {
-                message.setText("Выберите нужную для вас функцию");
-                execute(message);
+                sendNewMessageResponse(chatId, "/start");
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
-    public void saveFile(Document document, long chatId, String text){
+    private void saveFile(Document document, long chatId, String text){
         try {
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
@@ -94,21 +146,22 @@ public class TelegramBot extends TelegramLongPollingBot {
             //получаем расширение файла
 
             if(!text.isEmpty()) {
-                Files.copy(is, Paths.get(path + text + extension));
+                Files.copy(is, Paths.get(selectedPath.get(chatId) + "\\" + text +  extension));
             }else{
-                Files.copy(is, Paths.get(path + fileName));
+                Files.copy(is, Paths.get(selectedPath.get(chatId) + "\\" + fileName));
             }
             //копируем файл из потока в путь
-
             is.close();
-            sendResponse(chatId, "FileSaved");
+            sendNewMessageResponse(chatId, "FileSaved");
+
         } catch (TelegramApiException | IOException e) {
             throw new RuntimeException(e);
         }
     }
 
 
-    public void sendResponse(long chatid, String data) throws TelegramApiException{
+
+    private void sendNewMessageResponse(long chatid, String data) throws TelegramApiException{
         //метод для ОТПРАВКИ сообщения
         SendMessage message = new SendMessage();
         message.setChatId(chatid);
@@ -116,14 +169,20 @@ public class TelegramBot extends TelegramLongPollingBot {
             case "FileSaved":
                 sendMessage(message, chatid, "Файл сохранён");
                 //отправка сообщения без кнопки
-                sendResponse(chatid, "/start");
+                sendNewMessageResponse(chatid, "/start");
                 //отправка сообщения с кнопками
                 break;
             case "/start":
                 sendMessage(message, setMainMenuButtons(), chatid, "Выберите функцию");
                 break;
+            case "/error":
+                sendMessage(message, setMainMenuButtons(), chatid, "Произошла ошибка(");
+                break;
         }
     }
+
+
+
 
     private void sendMessage(SendMessage message, long chatId, String text) throws TelegramApiException{
         //для отправки сообщения без кнопки
@@ -141,28 +200,48 @@ public class TelegramBot extends TelegramLongPollingBot {
         execute(message);
     }
 
-    public void sendResponse(long chatId, String data, long messageID) throws IOException, TelegramApiException {
+
+
+
+
+    public void sendEditMessageResponse(long chatId, String data, long messageID) throws IOException, TelegramApiException {
         //метод для ИЗМЕНЕНИЯ существующего сообщения
         EditMessageText message = new EditMessageText();
         message.setMessageId((int) messageID);
-        switch (data){
+        switch (data) {
             case "LessonButtonPressed":
-                sendMessage(message, setLessonMenuButtons(), chatId, "Выберите дату");
+                System.out.println("LessonPressed");
+                editMessage(message, setLessonMenuButtons(), chatId, "Выберите дату");
                 break;
             case "TodayLessonsButtonPressed":
-                sendMessage(message, setLessonMenuButtons(), chatId, getLessons());
+                editMessage(message, setLessonMenuButtons(), chatId, getLessons());
                 break;
             case "TomorrowLessonsButtonPressed":
-                sendMessage(message, setLessonMenuButtons(), chatId, getLessons(1));
+                editMessage(message, setLessonMenuButtons(), chatId, getLessons(1));
                 break;
             case "BackButtonPressed":
-                sendMessage(message, setMainMenuButtons(), chatId, "Выберите функцию");
+                editMessage(message, setMainMenuButtons(), chatId, "Выберите функцию");
                 break;
+            case "FileButtonPressed":
+                editMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Выберите вашу папку вашей группы");
+                break;
+        }
+
+        //если нажали на кнопку директории
+        if(data.contains("Folder")){
+            String path1 = data.replace("Folder", "");
+            System.out.println(path1);
+            editMessage(message, FilesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
+            if(selectedPath.containsKey(chatId)){
+                selectedPath.remove(chatId);
+            }else{
+                selectedPath.put(chatId, path1);
+            }
         }
     }
 
     //установка настроек сообщения
-    private void sendMessage(EditMessageText message,InlineKeyboardMarkup keyboardMarkup, long chatId, String text) throws TelegramApiException {
+    private void editMessage(EditMessageText message,InlineKeyboardMarkup keyboardMarkup, long chatId, String text) throws TelegramApiException {
         //для ИЗМЕНЕНИЯ существующего сообщения
         message.setReplyMarkup(keyboardMarkup);
         message.setChatId(chatId);
@@ -170,8 +249,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         execute(message);
     }
 
+
     //получение расписания на завтра
     public String getLessons(int days) throws IOException {
+        System.out.println("getLessons");
         if(cache.containsKey("Tomorrow") && !cache.get("Tomorrow").isExpired()){
              System.out.println("Возвращение из кэша Tomorrow");
              return cache.get("Tomorrow").lessons;
@@ -202,7 +283,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         return lesson;
     }
 
-    private InlineKeyboardMarkup setLessonMenuButtons(){
+    private static InlineKeyboardMarkup setLessonMenuButtons(){
         InlineKeyboardButton today = setButton("На сегодня", "TodayLessonsButtonPressed");
         InlineKeyboardButton tomorrow = setButton("На завтра", "TomorrowLessonsButtonPressed");
         //создание кнопок и добавление к ним возвращаемого значения при нажатии
@@ -225,20 +306,20 @@ public class TelegramBot extends TelegramLongPollingBot {
         return markup;
     }
 
-    private InlineKeyboardButton setButton(String text, String callBackData){
+    public static InlineKeyboardButton setButton(String text, String callBackData){
         InlineKeyboardButton button = new InlineKeyboardButton();
         button.setText(text);
         button.setCallbackData(callBackData);
         return button;
     }
 
-    private InlineKeyboardMarkup setMainMenuButtons(){
+    private static InlineKeyboardMarkup setMainMenuButtons(){
         List<InlineKeyboardButton> row = new ArrayList<>();
         //создание массива кнопок
-        InlineKeyboardButton lessonButton = new InlineKeyboardButton();
-        lessonButton.setText("Расписание");
-        lessonButton.setCallbackData("LessonButtonPressed");
+        InlineKeyboardButton lessonButton = setButton("Расписание", "LessonButtonPressed");
+        InlineKeyboardButton fileButton = setButton("Файлы", "FileButtonPressed");
         //создание кнопки и установка текста и возвращаемого значения при нажатии
+        row.add(fileButton);
         row.add(lessonButton);
         //добавляем кнопку в массив кнопок
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
@@ -249,6 +330,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         //создание самого объекта клавиатуры, к которому все добавляем
         return markup;
     }
+
+    public void deleteMessage(long chatId, int messageId) throws TelegramApiException {
+        DeleteMessage deleteMessage = new DeleteMessage();
+        deleteMessage.setChatId(chatId);
+        deleteMessage.setMessageId(messageId);
+        System.out.println(messageId);
+        execute(deleteMessage);
+    }
+
 
     @Override
     public String getBotUsername() {
