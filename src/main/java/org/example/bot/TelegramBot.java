@@ -110,7 +110,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
         }else if(update.getMessage().hasDocument()){
             long chatId = update.getMessage().getChatId();
-            if(selectedPath.containsKey(chatId) && !selectedPath.get(chatId).isEmpty()) {
+            if(selectedPath.containsKey((Long) chatId) && !selectedPath.get((Long) chatId).isEmpty()) {
                 Document document = update.getMessage().getDocument();
                 saveFile(document, chatId, update.getMessage().getCaption());
             }else{
@@ -146,9 +146,9 @@ public class TelegramBot extends TelegramLongPollingBot {
             //получаем расширение файла
 
             if(!text.isEmpty()) {
-                Files.copy(is, Paths.get(selectedPath.get(chatId) + "\\" + text +  extension));
+                Files.copy(is, Paths.get(selectedPath.get((Long) chatId) + "\\" + text +  extension));
             }else{
-                Files.copy(is, Paths.get(selectedPath.get(chatId) + "\\" + fileName));
+                Files.copy(is, Paths.get(selectedPath.get((Long) chatId) + "\\" + fileName));
             }
             //копируем файл из потока в путь
             is.close();
@@ -164,7 +164,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void sendNewMessageResponse(long chatid, String data) throws TelegramApiException{
         //метод для ОТПРАВКИ сообщения
         SendMessage message = new SendMessage();
-        message.setChatId(chatid);
+        message.setChatId((Long) chatid);
         switch (data){
             case "FileSaved":
                 sendMessage(message, chatid, "Файл сохранён");
@@ -186,7 +186,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void sendMessage(SendMessage message, long chatId, String text) throws TelegramApiException{
         //для отправки сообщения без кнопки
-        message.setChatId(chatId);
+        message.setChatId((Long) chatId);
         message.setText(text);
         execute(message);
     }
@@ -195,7 +195,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void sendMessage(SendMessage message, InlineKeyboardMarkup keyboardMarkup, long chatId, String text) throws TelegramApiException {
         //для ОТПРАВКИ нового сообщения
         message.setReplyMarkup(keyboardMarkup);
-        message.setChatId(chatId);
+        message.setChatId((Long) chatId);
         message.setText(text);
         execute(message);
     }
@@ -207,7 +207,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void sendEditMessageResponse(long chatId, String data, long messageID) throws IOException, TelegramApiException {
         //метод для ИЗМЕНЕНИЯ существующего сообщения
         EditMessageText message = new EditMessageText();
-        message.setMessageId((int) messageID);
+        message.setMessageId(Integer.valueOf((int) messageID));
         switch (data) {
             case "LessonButtonPressed":
                 System.out.println("LessonPressed");
@@ -232,10 +232,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             String path1 = data.replace("Folder", "");
             System.out.println(path1);
             editMessage(message, FilesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
-            if(selectedPath.containsKey(chatId)){
-                selectedPath.remove(chatId);
+            if(selectedPath.containsKey((Long) chatId)){
+                selectedPath.remove((Long) chatId);
             }else{
-                selectedPath.put(chatId, path1);
+                selectedPath.put((Long) chatId, path1);
             }
         }
     }
@@ -244,7 +244,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void editMessage(EditMessageText message,InlineKeyboardMarkup keyboardMarkup, long chatId, String text) throws TelegramApiException {
         //для ИЗМЕНЕНИЯ существующего сообщения
         message.setReplyMarkup(keyboardMarkup);
-        message.setChatId(chatId);
+        message.setChatId((Long) chatId);
         message.setText(text);
         execute(message);
     }
@@ -333,8 +333,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     public void deleteMessage(long chatId, int messageId) throws TelegramApiException {
         DeleteMessage deleteMessage = new DeleteMessage();
-        deleteMessage.setChatId(chatId);
-        deleteMessage.setMessageId(messageId);
+        deleteMessage.setChatId((Long) chatId);
+        deleteMessage.setMessageId(Integer.valueOf(messageId));
         System.out.println(messageId);
         execute(deleteMessage);
     }

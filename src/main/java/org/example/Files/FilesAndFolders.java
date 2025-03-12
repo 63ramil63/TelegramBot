@@ -55,7 +55,7 @@ public class FilesAndFolders {
         //File$ - регулярное выражение которое удаляет одно вхождение с конца
         String correctFileName = fileName.replaceAll("File$", "");
         SendDocument message = new SendDocument();
-        message.setChatId(chatId);
+        message.setChatId((Long) chatId);
         message.setDocument(new InputFile(new File(correctFileName)));
         return message;
     }
