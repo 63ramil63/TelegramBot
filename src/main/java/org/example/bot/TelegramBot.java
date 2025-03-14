@@ -9,7 +9,6 @@ import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessages;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -38,7 +37,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     ParseSite parseSite = new ParseSite();
     private final HashMap<String, CachedLessons> cache = new HashMap<>();
-    private HashMap<Long, Integer> lastMessageId = new HashMap<>();
     public HashMap<Long, String> selectedPath = new HashMap<>();
     private String bot_token;
     private String bot_name;
@@ -254,8 +252,8 @@ public class TelegramBot extends TelegramLongPollingBot {
     public String getLessons(int days) throws IOException {
         System.out.println("getLessons");
         if(cache.containsKey("Tomorrow") && !cache.get("Tomorrow").isExpired()){
-             System.out.println("Возвращение из кэша Tomorrow");
-             return cache.get("Tomorrow").lessons;
+            System.out.println("Возвращение из кэша Tomorrow");
+            return cache.get("Tomorrow").lessons;
         }else if(cache.containsKey("Tomorrow") && cache.get("Tomorrow").isExpired()){
             cache.remove("Tomorrow");
         }

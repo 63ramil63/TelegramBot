@@ -35,10 +35,13 @@ public class ParseSite {
             Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
             Elements _lesson = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(4)");
             num++;
-            lessons += "\n" + _number.text() + " " + _time.text() + _lesson.text();
+            lessons += "\n" + _number.text() + ") " + _time.text() + " " + _lesson.text();
         }
+        lessons = lessons.replaceAll("\\s+$", "");
+        lessons = lessons.substring(0, lessons.length() - 1);
+        lessons = lessons.replaceAll("Московское шоссе, 120", "");
+        lessons = lessons.replaceAll(" Замена Свободное время на:", "");
+        //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
         return lessons;
     }
-
-
 }
