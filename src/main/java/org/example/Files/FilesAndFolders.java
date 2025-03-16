@@ -40,6 +40,12 @@ public class FilesAndFolders {
 
             //добавление кнопки назад
             List<InlineKeyboardButton> row = new ArrayList<>();
+
+            if(path.equals(TelegramBot.path)){
+                row.add(TelegramBot.setButton("Добавить папку", "AddFolderButtonPressed"));
+            }
+
+
             row.add(TelegramBot.setButton("Назад", "BackButtonPressed"));
             keyboard.add(row);
 
@@ -58,5 +64,12 @@ public class FilesAndFolders {
         message.setChatId((Long) chatId);
         message.setDocument(new InputFile(new File(correctFileName)));
         return message;
+    }
+
+
+    public static void addFolder(String text) throws IOException {
+        if(!Files.isDirectory(Path.of(TelegramBot.path + text))){
+            Path directory = Files.createDirectory(Path.of(TelegramBot.path + text));
+        }
     }
 }

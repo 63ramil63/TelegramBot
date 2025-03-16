@@ -11,11 +11,13 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +40,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     ParseSite parseSite = new ParseSite();
     private final HashMap<String, CachedLessons> cache = new HashMap<>();
     public HashMap<Long, String> selectedPath = new HashMap<>();
+    public HashMap<Long, Boolean> canAddFolder = new HashMap<>();
     private String bot_token;
     private String bot_name;
     private String duration;
@@ -96,7 +99,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                     }
                     System.out.println(e);
                     throw new RuntimeException(e);
-
                 }
             }else{
                 try {
@@ -125,6 +127,16 @@ public class TelegramBot extends TelegramLongPollingBot {
                 sendNewMessageResponse(chatId, "/start");
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
+            }
+        }else if(update.getMessage().hasText()){
+            long chatId = update.getMessage().getChatId();
+            String text = update.getMessage().getText();
+            if(canAddFolder.get(chatId)){
+                try {
+                    sendNewMessageResponse(chatId, text);
+                } catch (TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -176,6 +188,13 @@ public class TelegramBot extends TelegramLongPollingBot {
             case "/error":
                 sendMessage(message, setMainMenuButtons(), chatid, "Произошла ошибка(");
                 break;
+            default:
+                try {
+                    FilesAndFolders.addFolder(data);
+                }catch (IOException e){
+                    System.out.println(e);
+                }
+                break;
         }
     }
 
@@ -222,6 +241,15 @@ public class TelegramBot extends TelegramLongPollingBot {
                 break;
             case "FileButtonPressed":
                 editMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Выберите вашу папку вашей группы");
+                break;
+            case "AddFolderButtonPressed":
+                editMessage(message, setMainMenuButtons(), chatId, "Напишите название файла");
+                if(canAddFolder.containsKey(chatId)){
+                    canAddFolder.remove(chatId);
+                    canAddFolder.put(chatId, true);
+                }else{
+                    canAddFolder.put(chatId, true);
+                }
                 break;
         }
 
