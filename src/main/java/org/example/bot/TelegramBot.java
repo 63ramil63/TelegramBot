@@ -68,6 +68,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         if(update.hasCallbackQuery()){
             //getCallBackQuery дает те же возможности что и message, но получить message можно только из CallBackQuery.getMessage
             long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+            //удаление статуса создания папки
+            canAddFolder.remove(chatId);
+
             String data = update.getCallbackQuery().getData();
             System.out.println(data);
             if(data.contains("Folder")){
@@ -110,6 +114,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
         }else if(update.getMessage().hasDocument()){
             long chatId = update.getMessage().getChatId();
+
+            //удаление статуса создания папки
+            canAddFolder.remove(chatId);
+
             if(selectedPath.containsKey((Long) chatId) && !selectedPath.get((Long) chatId).isEmpty()) {
                 Document document = update.getMessage().getDocument();
                 saveFile(document, chatId, update.getMessage().getCaption());
@@ -191,7 +199,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             default:
                 try {
                     FilesAndFolders.addFolder(data);
+                    sendMessage(message, setMainMenuButtons(), chatid, "Директория создана");
+                    canAddFolder.remove(chatid);
                 }catch (IOException e){
+                    sendNewMessageResponse(chatid, "/error");
                     System.out.println(e);
                 }
                 break;

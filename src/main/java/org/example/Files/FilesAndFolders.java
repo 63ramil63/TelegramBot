@@ -32,6 +32,7 @@ public class FilesAndFolders {
                 if(!Files.isDirectory(path1)){
                     //удаление из навзания лишней '\'
                     row.add(TelegramBot.setButton(fileName.replace("\\", ""), path1 +  "File"));
+                    System.out.println(fileName + " ^^^");
                 }else{
                     row.add(TelegramBot.setButton(fileName, path1 + "Folder"));
                 }
@@ -45,14 +46,12 @@ public class FilesAndFolders {
                 row.add(TelegramBot.setButton("Добавить папку", "AddFolderButtonPressed"));
             }
 
-
             row.add(TelegramBot.setButton("Назад", "BackButtonPressed"));
             keyboard.add(row);
 
-
             markup.setKeyboard(keyboard);
         }catch (IOException e){
-            System.out.println(e);
+            System.out.println(e + " 1");
         }
         return markup;
     }
@@ -68,8 +67,8 @@ public class FilesAndFolders {
 
 
     public static void addFolder(String text) throws IOException {
-        if(!Files.isDirectory(Path.of(TelegramBot.path + text))){
-            Path directory = Files.createDirectory(Path.of(TelegramBot.path + text));
+        if(!Files.isDirectory(Path.of(TelegramBot.path  + text))){
+            Files.createDirectory(Path.of(TelegramBot.path + text));
         }
     }
 }
