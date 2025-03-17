@@ -114,14 +114,16 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
         }else if(update.getMessage().hasDocument()){
             long chatId = update.getMessage().getChatId();
-
+            System.out.println("hasDoc");
             //удаление статуса создания папки
             canAddFolder.remove(chatId);
 
             if(selectedPath.containsKey((Long) chatId) && !selectedPath.get((Long) chatId).isEmpty()) {
                 Document document = update.getMessage().getDocument();
+                System.out.println("doc");
                 saveFile(document, chatId, update.getMessage().getCaption());
             }else{
+                System.out.println("sendMessage");
                 SendMessage message = new SendMessage();
                 try {
                     sendMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
@@ -151,21 +153,27 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void saveFile(Document document, long chatId, String text){
         try {
+            System.out.println("try");
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
-            //обращение к TelegramAPI для получения инфы о файле
 
+            //обращение к TelegramAPI для получения инфы о файле
             String fullFilePath = "https://api.telegram.org/file/bot" + bot_token + "/" + filePath;
+
             InputStream is = new URL(fullFilePath).openStream();
             //открываем поток для чтения
-
+            System.out.println("InputStream");
             String fileName = document.getFileName();
+            System.out.println(fileName + "filename");
             String extension = fileName.substring(fileName.lastIndexOf("."));
             //получаем расширение файла
+            System.out.println("if else block");
 
-            if(!text.isEmpty()) {
+            if(text != null) {
+                System.out.println(1);
                 Files.copy(is, Paths.get(selectedPath.get((Long) chatId) + "\\" + text +  extension));
             }else{
+                System.out.println(2);
                 Files.copy(is, Paths.get(selectedPath.get((Long) chatId) + "\\" + fileName));
             }
             //копируем файл из потока в путь
@@ -270,7 +278,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             System.out.println(path1);
             editMessage(message, FilesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
             if(selectedPath.containsKey((Long) chatId)){
-                selectedPath.remove((Long) chatId);
+                selectedPath.replace(chatId, path1);
             }else{
                 selectedPath.put((Long) chatId, path1);
             }
