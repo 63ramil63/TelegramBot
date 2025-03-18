@@ -39,8 +39,8 @@ public class TelegramBot extends TelegramLongPollingBot {
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     ParseSite parseSite = new ParseSite();
     private final HashMap<String, CachedLessons> cache = new HashMap<>();
-    public HashMap<Long, String> selectedPath = new HashMap<>();
-    public HashMap<Long, Boolean> canAddFolder = new HashMap<>();
+    public static HashMap<Long, String> selectedPath = new HashMap<>();
+    public static HashMap<Long, Boolean> canAddFolder = new HashMap<>();
     private String bot_token;
     private String bot_name;
     private String duration;
@@ -153,7 +153,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void saveFile(Document document, long chatId, String text){
         try {
-            System.out.println("try");
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
 
@@ -162,12 +161,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 
             InputStream is = new URL(fullFilePath).openStream();
             //открываем поток для чтения
-            System.out.println("InputStream");
             String fileName = document.getFileName();
             System.out.println(fileName + "filename");
             String extension = fileName.substring(fileName.lastIndexOf("."));
             //получаем расширение файла
-            System.out.println("if else block");
 
             if(text != null) {
                 System.out.println(1);
@@ -184,6 +181,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             throw new RuntimeException(e);
         }
     }
+
+
 
 
 
@@ -380,7 +379,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         DeleteMessage deleteMessage = new DeleteMessage();
         deleteMessage.setChatId((Long) chatId);
         deleteMessage.setMessageId(Integer.valueOf(messageId));
-        System.out.println(messageId);
         execute(deleteMessage);
     }
 

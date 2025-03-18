@@ -18,7 +18,7 @@ import java.util.List;
 
 public class FilesAndFolders {
     public static InlineKeyboardMarkup getFilesFromFolder(String path){
-        System.out.println("path: " + path);
+
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
@@ -64,6 +64,8 @@ public class FilesAndFolders {
         message.setDocument(new InputFile(new File(correctFileName)));
         return message;
     }
+
+
 
 
     public static void addFolder(String text) throws IOException {
