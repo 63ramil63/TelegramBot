@@ -1,6 +1,7 @@
 package org.example.Files;
 
 import org.example.bot.TelegramBot;
+import org.example.messages.Messages;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -31,10 +32,10 @@ public class FilesAndFolders {
                 System.out.println("fileName: " + fileName);
                 if(!Files.isDirectory(path1)){
                     //удаление из навзания лишней '\'
-                    row.add(TelegramBot.setButton(fileName.replace("\\", ""), path1 +  "File"));
+                    row.add(Messages.setButton(fileName.replace("\\", ""), path1 +  "File"));
                     System.out.println(fileName + " ^^^");
                 }else{
-                    row.add(TelegramBot.setButton(fileName, path1 + "Folder"));
+                    row.add(Messages.setButton(fileName, path1 + "Folder"));
                 }
                 keyboard.add(row);
             });
@@ -43,10 +44,10 @@ public class FilesAndFolders {
             List<InlineKeyboardButton> row = new ArrayList<>();
 
             if(path.equals(TelegramBot.path)){
-                row.add(TelegramBot.setButton("Добавить папку", "AddFolderButtonPressed"));
+                row.add(Messages.setButton("Добавить папку", "AddFolderButtonPressed"));
             }
 
-            row.add(TelegramBot.setButton("Назад", "BackButtonPressed"));
+            row.add(Messages.setButton("Назад", "BackButtonPressed"));
             keyboard.add(row);
 
             markup.setKeyboard(keyboard);

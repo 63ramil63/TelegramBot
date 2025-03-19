@@ -2,6 +2,7 @@ package org.example.bot;
 
 import org.example.Files.FilesAndFolders;
 import org.example.ParseSite;
+import org.example.messages.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -11,13 +12,11 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -91,7 +90,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             }else if(data.contains("File")){
                 try {
                     int messageId = update.getCallbackQuery().getMessage().getMessageId();
-                    deleteMessage(chatId, messageId);
+                    DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
+                    execute(deleteMessage);
                     SendDocument sendDocument = FilesAndFolders.sendMessageWithDoc(data, chatId);
                     execute(sendDocument);
                     sendNewMessageResponse(chatId, "/start");
@@ -126,7 +126,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                 System.out.println("sendMessage");
                 SendMessage message = new SendMessage();
                 try {
-                    sendMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
+                    Messages.sendMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
+                    execute(message);
                 } catch (TelegramApiException e) {
                     throw new RuntimeException(e);
                 }
@@ -192,21 +193,25 @@ public class TelegramBot extends TelegramLongPollingBot {
         message.setChatId((Long) chatid);
         switch (data){
             case "FileSaved":
-                sendMessage(message, chatid, "Файл сохранён");
+                Messages.sendMessage(message, chatid, "Файл сохранён");
+                execute(message);
                 //отправка сообщения без кнопки
                 sendNewMessageResponse(chatid, "/start");
                 //отправка сообщения с кнопками
                 break;
             case "/start":
-                sendMessage(message, setMainMenuButtons(), chatid, "Выберите функцию");
+                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Выберите функцию");
+                execute(message);
                 break;
             case "/error":
-                sendMessage(message, setMainMenuButtons(), chatid, "Произошла ошибка(");
+                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Произошла ошибка(");
+                execute(message);
                 break;
             default:
                 try {
                     FilesAndFolders.addFolder(data);
-                    sendMessage(message, setMainMenuButtons(), chatid, "Директория создана");
+                    Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Директория создана");
+                    execute(message);
                     canAddFolder.remove(chatid);
                 }catch (IOException e){
                     sendNewMessageResponse(chatid, "/error");
@@ -217,28 +222,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
 
-
-
-    private void sendMessage(SendMessage message, long chatId, String text) throws TelegramApiException{
-        //для отправки сообщения без кнопки
-        message.setChatId((Long) chatId);
-        message.setText(text);
-        execute(message);
-    }
-
-    //установка настроек сообщения
-    private void sendMessage(SendMessage message, InlineKeyboardMarkup keyboardMarkup, long chatId, String text) throws TelegramApiException {
-        //для ОТПРАВКИ нового сообщения
-        message.setReplyMarkup(keyboardMarkup);
-        message.setChatId((Long) chatId);
-        message.setText(text);
-        execute(message);
-    }
-
-
-
-
-
     public void sendEditMessageResponse(long chatId, String data, long messageID) throws IOException, TelegramApiException {
         //метод для ИЗМЕНЕНИЯ существующего сообщения
         EditMessageText message = new EditMessageText();
@@ -246,22 +229,28 @@ public class TelegramBot extends TelegramLongPollingBot {
         switch (data) {
             case "LessonButtonPressed":
                 System.out.println("LessonPressed");
-                editMessage(message, setLessonMenuButtons(), chatId, "Выберите дату");
+                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите дату");
+                execute(message);
                 break;
             case "TodayLessonsButtonPressed":
-                editMessage(message, setLessonMenuButtons(), chatId, getLessons());
+                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, getLessons());
+                execute(message);
                 break;
             case "TomorrowLessonsButtonPressed":
-                editMessage(message, setLessonMenuButtons(), chatId, getLessons(1));
+                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, getLessons(1));
+                execute(message);
                 break;
             case "BackButtonPressed":
-                editMessage(message, setMainMenuButtons(), chatId, "Выберите функцию");
+                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите функцию");
+                execute(message);
                 break;
             case "FileButtonPressed":
-                editMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Выберите вашу папку вашей группы");
+                Messages.editMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Выберите вашу папку вашей группы");
+                execute(message);
                 break;
             case "AddFolderButtonPressed":
-                editMessage(message, setMainMenuButtons(), chatId, "Напишите название файла");
+                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Напишите название файла");
+                execute(message);
                 if(canAddFolder.containsKey(chatId)){
                     canAddFolder.remove(chatId);
                     canAddFolder.put(chatId, true);
@@ -275,7 +264,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         if(data.contains("Folder")){
             String path1 = data.replace("Folder", "");
             System.out.println(path1);
-            editMessage(message, FilesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
+            Messages.editMessage(message, FilesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
+            execute(message);
             if(selectedPath.containsKey((Long) chatId)){
                 selectedPath.replace(chatId, path1);
             }else{
@@ -284,14 +274,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    //установка настроек сообщения
-    private void editMessage(EditMessageText message,InlineKeyboardMarkup keyboardMarkup, long chatId, String text) throws TelegramApiException {
-        //для ИЗМЕНЕНИЯ существующего сообщения
-        message.setReplyMarkup(keyboardMarkup);
-        message.setChatId((Long) chatId);
-        message.setText(text);
-        execute(message);
-    }
+
 
 
     //получение расписания на завтра
@@ -325,61 +308,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         cache.put("Today", new CachedLessons(lesson, Long.parseLong(duration)));
         System.out.println("Сохранение в кэш: " + cache.get("Today").toString());
         return lesson;
-    }
-
-    private static InlineKeyboardMarkup setLessonMenuButtons(){
-        InlineKeyboardButton today = setButton("На сегодня", "TodayLessonsButtonPressed");
-        InlineKeyboardButton tomorrow = setButton("На завтра", "TomorrowLessonsButtonPressed");
-        //создание кнопок и добавление к ним возвращаемого значения при нажатии
-        List<InlineKeyboardButton> row = new ArrayList<>();
-        row.add(today);
-        row.add(tomorrow);
-        //добавляем в ряд кнопки
-        InlineKeyboardButton back = setButton("Назад", "BackButtonPressed");
-        //кнопка для возвращения в глав меню
-        List<InlineKeyboardButton> row1 = new ArrayList<>();
-        row1.add(back);
-        //добавление кнопки назад
-        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        keyboard.add(row);
-        keyboard.add(row1);
-        //добавление рядов в клаву
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(keyboard);
-        //установка клавиатуры в markup
-        return markup;
-    }
-
-    public static InlineKeyboardButton setButton(String text, String callBackData){
-        InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(text);
-        button.setCallbackData(callBackData);
-        return button;
-    }
-
-    private static InlineKeyboardMarkup setMainMenuButtons(){
-        List<InlineKeyboardButton> row = new ArrayList<>();
-        //создание массива кнопок
-        InlineKeyboardButton lessonButton = setButton("Расписание", "LessonButtonPressed");
-        InlineKeyboardButton fileButton = setButton("Файлы", "FileButtonPressed");
-        //создание кнопки и установка текста и возвращаемого значения при нажатии
-        row.add(fileButton);
-        row.add(lessonButton);
-        //добавляем кнопку в массив кнопок
-        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        keyboard.add(row);
-        //клавиатура является массивом в массиве кнопок
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(keyboard);
-        //создание самого объекта клавиатуры, к которому все добавляем
-        return markup;
-    }
-
-    public void deleteMessage(long chatId, int messageId) throws TelegramApiException {
-        DeleteMessage deleteMessage = new DeleteMessage();
-        deleteMessage.setChatId((Long) chatId);
-        deleteMessage.setMessageId(Integer.valueOf(messageId));
-        execute(deleteMessage);
     }
 
 
