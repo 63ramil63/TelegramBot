@@ -9,21 +9,45 @@ import java.io.IOException;
 
 public class ParseSite {
     private Document doc;
+    public String url = "https://lk.ks.psuti.ru/?mn=2&obj=141";
 
     public String getDay(String _day) throws IOException {
         System.out.println("get Day");
-        doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2&obj=141").userAgent("Chrome").get();
+        doc = Jsoup.connect(url).userAgent("Chrome").get();
         int num = 1;
         while(num < 60){
-            Elements day = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
-            num ++;
-            if(day.text().contains(_day)){
+            if(match(_day, num, doc)){
+                //проверка на совпадение дат
                 String lessons = getLesson(num);
                 return _day + lessons;
             }
+            num++;
         }
+
+        Elements week = doc.select("body > table:nth-child(4) > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(8) > a");
+        String wk = week.attr("href");
+        int index = wk.indexOf("wk");
+        wk = wk.substring(index);
+
+        num = 0;
+        while(num < 60){
+            Document newDoc = Jsoup.connect(url+"&"+wk).userAgent("Chrome").get();
+            if(match(_day, num, newDoc)){
+                String lessons = getLesson(num);
+                return _day + lessons;
+            }
+            num++;
+        }
+
+
         return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=141";
     }
+
+    public boolean match(String _day, int num, Document doc){
+        Elements day = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
+        return day.text().contains(_day);
+    }
+
 
     public String getLesson(int num) {
         num ++;     //чтобы не выбирало ненужные поля
