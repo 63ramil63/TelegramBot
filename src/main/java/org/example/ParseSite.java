@@ -2,9 +2,12 @@ package org.example;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class ParseSite {
@@ -15,9 +18,11 @@ public class ParseSite {
         System.out.println("get Day");
         doc = Jsoup.connect(url).userAgent("Chrome").get();
         int num = 1;
+
         while(num < 60){
             if(match(_day, num, doc)){
                 //проверка на совпадение дат
+                num++;
                 String lessons = getLesson(num);
                 return _day + lessons;
             }
@@ -26,13 +31,17 @@ public class ParseSite {
 
         Elements week = doc.select("body > table:nth-child(4) > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(8) > a");
         String wk = week.attr("href");
+        //получаем неделю
         int index = wk.indexOf("wk");
         wk = wk.substring(index);
+        //удаляем ненужное
 
-        num = 0;
+        num = 1;
+
         while(num < 60){
             Document newDoc = Jsoup.connect(url+"&"+wk).userAgent("Chrome").get();
             if(match(_day, num, newDoc)){
+                num++;
                 String lessons = getLesson(num);
                 return _day + lessons;
             }
@@ -68,4 +77,21 @@ public class ParseSite {
         //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
         return lessons;
     }
+
+
+    public static List<String> getYear() throws IOException {
+        Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").get();
+        List<String> years = new ArrayList<>();
+        int i = 1;
+        while(i != 11){
+            String year = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(6) > td:nth-child(" + i + ")").text();
+            if(!year.isEmpty()){
+                years.add(year);
+            }
+            i++;
+        }
+        //получаем курсы и помещаем их в массив
+        return years;
+    }
+
 }

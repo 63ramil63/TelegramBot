@@ -1,5 +1,6 @@
 package org.example.messages;
 
+import org.example.ParseSite;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -7,6 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,6 +87,23 @@ public class Messages {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
         //создание самого объекта клавиатуры, к которому все добавляем
+        return markup;
+    }
+
+    public static InlineKeyboardMarkup setSelectYearButtons() throws IOException {
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        for(String year: ParseSite.getYear()){
+            List<InlineKeyboardButton> row = new ArrayList<>();
+            InlineKeyboardButton button = setButton(year, year + "year");
+            row.add(button);
+            keyboard.add(row);
+        }
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        InlineKeyboardButton back = setButton("Назад", "BackButtonPressed");
+        row.add(back);
+        keyboard.add(row);
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(keyboard);
         return markup;
     }
 }
