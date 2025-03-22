@@ -50,14 +50,21 @@ public class Messages {
         row.add(today);
         row.add(tomorrow);
         //добавляем в ряд кнопки
+
+        InlineKeyboardButton selectYear = setButton("Выбрать курс", "selectYearButtonPressed");
+        //кнопка для выбора курса
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        row1.add(selectYear);
+
         InlineKeyboardButton back = setButton("Назад", "BackButtonPressed");
         //кнопка для возвращения в глав меню
-        List<InlineKeyboardButton> row1 = new ArrayList<>();
-        row1.add(back);
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        row2.add(back);
         //добавление кнопки назад
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         keyboard.add(row);
         keyboard.add(row1);
+        keyboard.add(row2);
         //добавление рядов в клаву
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
@@ -94,7 +101,7 @@ public class Messages {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         for(String year: ParseSite.getYear()){
             List<InlineKeyboardButton> row = new ArrayList<>();
-            InlineKeyboardButton button = setButton(year, year + "year");
+            InlineKeyboardButton button = setButton(year, year + "Year");
             row.add(button);
             keyboard.add(row);
         }

@@ -91,6 +91,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 try {
                     int messageId = update.getCallbackQuery().getMessage().getMessageId();
                     DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
+                    //устанавливаем удаляемое сообщение
                     execute(deleteMessage);
                     SendDocument sendDocument = FilesAndFolders.sendMessageWithDoc(data, chatId);
                     execute(sendDocument);
@@ -101,10 +102,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                     } catch (TelegramApiException ex) {
                         throw new RuntimeException(ex);
                     }
-                    System.out.println(e);
                     throw new RuntimeException(e);
                 }
             }else{
+                System.out.println("try");
                 try {
                     long messageId = update.getCallbackQuery().getMessage().getMessageId();
                     sendEditMessageResponse(chatId, data, messageId);
@@ -257,6 +258,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }else{
                     canAddFolder.put(chatId, true);
                 }
+                break;
+            case "selectYearButtonPressed":
+                System.out.println("selectYearButton");
+                Messages.editMessage(message, Messages.setSelectYearButtons(), chatId, "Выберите курс");
+                execute(message);
                 break;
         }
 
