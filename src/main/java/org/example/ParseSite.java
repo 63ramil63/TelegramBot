@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.bot.TelegramBot;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Node;
@@ -11,12 +12,12 @@ import java.util.List;
 
 
 public class ParseSite {
-    private Document doc;
-    public String url = "https://lk.ks.psuti.ru/?mn=2&obj=141";
+    private static Document doc;
+    public static String url = "https://lk.ks.psuti.ru/?mn=2&obj=";
 
-    public String getDay(String _day) throws IOException {
+    public static String getDay(String _day, Long chatId) throws IOException {
         System.out.println("get Day");
-        doc = Jsoup.connect(url).userAgent("Chrome").get();
+        doc = Jsoup.connect(url + TelegramBot.siteObj.get(chatId)).userAgent("Chrome").get();
         int num = 1;
 
         while(num < 60){
@@ -49,16 +50,16 @@ public class ParseSite {
         }
 
 
-        return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=141";
+        return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=" + TelegramBot.siteObj.get(chatId);
     }
 
-    public boolean match(String _day, int num, Document doc){
+    public static boolean match(String _day, int num, Document doc){
         Elements day = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
         return day.text().contains(_day);
     }
 
 
-    public String getLesson(int num) {
+    public static String getLesson(int num) {
         num ++;     //чтобы не выбирало ненужные поля
         Elements currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
         String lessons = "";
@@ -86,7 +87,7 @@ public class ParseSite {
         while(i != 11){
             String year = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(6) > td:nth-child(" + i + ")").text();
             if(!year.isEmpty()){
-                years.add(year);
+                years.add(year + "Year" + i);
             }
             i++;
         }
@@ -94,4 +95,25 @@ public class ParseSite {
         return years;
     }
 
+    public static List<String> getGroups(int num) throws IOException {
+        System.out.println("getGroups");
+        Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").get();
+        List<String> groups = new ArrayList<>();
+        Elements elementsSize = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(7) > td:nth-child(" + num + ") > table > tbody > tr:nth-child(1) > td > table > tbody > tr");
+        for(int i = 1; i < elementsSize.size() + 1; i++){
+            Elements element = elementsSize.select("tr:nth-child(" + i + ")");
+            //получаем строку в столбце
+            Elements obj = element.select("td > a");
+            //получаем <a> с атрибутом href
+            String attribute = obj.attr("href");
+            //получаем значение из атрибута <a>
+            int index = attribute.indexOf("obj");
+            attribute = attribute.substring(index);
+            attribute = attribute.replace("obj", "");
+            //удаляем ненужное, остается только obj
+            groups.add(element.text() + "Group" + attribute);
+            //
+        }
+        return groups;
+    }
 }

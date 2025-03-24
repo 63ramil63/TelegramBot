@@ -1,6 +1,9 @@
 package org.example.messages;
 
 import org.example.ParseSite;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -99,9 +102,41 @@ public class Messages {
 
     public static InlineKeyboardMarkup setSelectYearButtons() throws IOException {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        for(String year: ParseSite.getYear()){
+        List<String> years = ParseSite.getYear();
+        for (String year : years) {
+            int index = year.indexOf("Year");
+            //индекс, который указывает на год
+            String num = year.substring(index);
+            //получаем строку формата /число
+            year = year.replace(num, "");
+            //удаляем из строки Year(что то там)
             List<InlineKeyboardButton> row = new ArrayList<>();
-            InlineKeyboardButton button = setButton(year, year + "Year");
+            InlineKeyboardButton button = setButton(year, year + num);
+            row.add(button);
+            keyboard.add(row);
+        }
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        InlineKeyboardButton back = setButton("Назад", "BackButtonPressed");
+        row.add(back);
+        keyboard.add(row);
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(keyboard);
+        return markup;
+    }
+
+    public static InlineKeyboardMarkup setGroupSelectButtons(int i) throws IOException {
+        System.out.println("setGroupButton");
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        List<String> groups = ParseSite.getGroups(i);
+        for(String group: groups){
+            List<InlineKeyboardButton> row = new ArrayList<>();
+            int index = group.indexOf("Group");
+            //индекс, который указывает на obj
+            String obj = group.substring(index);
+            //строка формата /obj
+            String buttonName = group.replace(obj, "");
+            //удаляем /obj из названия
+            InlineKeyboardButton button = Messages.setButton(buttonName, buttonName + obj);
             row.add(button);
             keyboard.add(row);
         }
