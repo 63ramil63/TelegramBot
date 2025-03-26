@@ -223,7 +223,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     public boolean sendEditMessageResponse(long chatId, String data, long messageID) throws IOException, TelegramApiException {
         //метод для ИЗМЕНЕНИЯ существующего сообщения / метод возвращает bool чтобы остановить выполнение когда нужно
         EditMessageText message = new EditMessageText();
-        message.setMessageId(Integer.valueOf((int) messageID));
+        message.setMessageId((int) messageID);
         switch (data) {
             case "LessonButtonPressed":
                 System.out.println("LessonPressed");
@@ -231,11 +231,25 @@ public class TelegramBot extends TelegramLongPollingBot {
                 execute(message);
                 return true;
             case "TodayLessonsButtonPressed":
-                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, getLessons(chatId));
+                if(cache.containsKey(siteObj.get(chatId)) && !cache.get(siteObj.get(chatId)).isExpired()){
+                    System.out.println("Возвращение из кэша Today");
+                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, cache.get(siteObj.get(chatId)).lessonsToday);
+                    execute(message);
+                    return true;
+                }
+                getLessons(chatId);
+                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, cache.get(siteObj.get(chatId)).lessonsToday);
                 execute(message);
                 return true;
             case "TomorrowLessonsButtonPressed":
-                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, getLessons(1, chatId));
+                if(cache.containsKey(siteObj.get(chatId)) && !cache.get(siteObj.get(chatId)).isExpired()){
+                    System.out.println("Возвращение из кэша Today");
+                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, cache.get(siteObj.get(chatId)).lessonsTomorrow);
+                    execute(message);
+                    return true;
+                }
+                getLessons(chatId);
+                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, cache.get(siteObj.get(chatId)).lessonsTomorrow);
                 execute(message);
                 return true;
             case "BackButtonPressed":
@@ -304,39 +318,21 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
 
-
-
-    //получение расписания на завтра
-    public String getLessons(int days, Long chatId) throws IOException {
-        System.out.println("getLessons");
-        if(cache.containsKey("Tomorrow") && !cache.get("Tomorrow").isExpired()){
-            System.out.println("Возвращение из кэша Tomorrow");
-            return cache.get("Tomorrow").lessons;
-        }else if(cache.containsKey("Tomorrow") && cache.get("Tomorrow").isExpired()){
-            cache.remove("Tomorrow");
-        }
-        LocalDate localDate = LocalDate.now().plusDays(days);
-        String day = localDate.format(dateTimeFormatter);
-        String lesson = ParseSite.getDay(day, chatId);
-        cache.put("Tomorrow", new CachedLessons(lesson, Long.parseLong(duration)));
-        System.out.println("Сохранение в кэш: " + cache.get("Tomorrow").toString());
-        return lesson;
-    }
-
     //получение расписания на сегодня
-    public String getLessons(Long chatId) throws IOException {
-        if(cache.containsKey("Today") && !cache.get("Today").isExpired()){
-            System.out.println("Возвращение из кэша Today");
-            return cache.get("Today").lessons;
-        }else if(cache.containsKey("Today") && cache.get("Today").isExpired()){
-            cache.remove("Today");
+    public boolean getLessons(Long chatId) throws IOException {
+        if(cache.containsKey(siteObj.get(chatId)) && cache.get(siteObj.get(chatId)).isExpired()){
+            cache.remove(siteObj.get(chatId));
         }
         LocalDate localDate = LocalDate.now();
-        String day = localDate.format(dateTimeFormatter);
-        String lesson = ParseSite.getDay(day, chatId);
-        cache.put("Today", new CachedLessons(lesson, Long.parseLong(duration)));
-        System.out.println("Сохранение в кэш: " + cache.get("Today").toString());
-        return lesson;
+        String today = localDate.format(dateTimeFormatter);
+        LocalDate localDateTomorrow = LocalDate.now().plusDays(1);
+        String tomorrow = localDateTomorrow.format(dateTimeFormatter);
+        String lessonsToday = ParseSite.getDay(today, chatId);
+        String lessonsTomorrow = ParseSite.getDay(tomorrow, chatId);
+
+        cache.put(siteObj.get(chatId), new CachedLessons(lessonsToday, lessonsTomorrow, Long.parseLong(duration)));
+        System.out.println("Сохранение в кэш: " + cache.get(siteObj.get(chatId)).toString());
+        return true;
     }
 
 
@@ -351,13 +347,15 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private static class CachedLessons{
-        String lessons;
+        String lessonsToday;
+        String lessonsTomorrow;
         long timestamp;
         long duration;
 
-        public CachedLessons(String lessons, long duration){
+        public CachedLessons(String lessonsToday, String lessonsTomorrow, long duration){
             this.timestamp = System.currentTimeMillis();
-            this.lessons = lessons;
+            this.lessonsTomorrow = lessonsTomorrow;
+            this.lessonsToday = lessonsToday;
             this.duration = duration;
         }
 
