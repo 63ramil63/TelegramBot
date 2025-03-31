@@ -1,6 +1,7 @@
 package org.example.bot;
 
 import org.example.Files.FilesAndFolders;
+import org.example.Main;
 import org.example.ParseSite;
 import org.example.messages.Messages;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     public void loadConfig(){
         Properties properties = new Properties();
-        try(FileInputStream fileInputStream = new FileInputStream("src/main/resources/config.properties")){
+        try(FileInputStream fileInputStream = new FileInputStream(Main.propertyPath)){
             properties.load(fileInputStream);
             bot_token = properties.getProperty("bot_token");
             bot_name = properties.getProperty("bot_name");
