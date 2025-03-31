@@ -314,6 +314,9 @@ public class TelegramBot extends TelegramLongPollingBot {
                 System.out.println("add group");
                 siteObj.put(chatId, group);
             }
+            Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Группа сохранена");
+            execute(message);
+            return true;
         }
         return false;
     }
