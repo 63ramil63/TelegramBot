@@ -3,6 +3,7 @@ package org.example.bot;
 import org.example.Files.FilesAndFolders;
 import org.example.Main;
 import org.example.ParseSite;
+import org.example.database.UserRepository;
 import org.example.messages.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 
@@ -41,11 +44,14 @@ public class TelegramBot extends TelegramLongPollingBot {
     private String bot_name;
     private String duration;
     public static String path;
+    //newCachedThreadPool - создает пул потоков, который может создавать новые потоки по мере необходимости, но при этом повторно использовать ранее созданные потоки, если они свободны
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     public TelegramBot(){
         loadConfig();
     }
 
+    //загрузка данных из файла конфига
     public void loadConfig(){
         Properties properties = new Properties();
         try(FileInputStream fileInputStream = new FileInputStream(Main.propertyPath)){
@@ -54,84 +60,100 @@ public class TelegramBot extends TelegramLongPollingBot {
             bot_name = properties.getProperty("bot_name");
             duration = properties.getProperty("duration");
             path = properties.getProperty("path");
-
         }catch (IOException e){
             log.error("e: ", e);
         }
     }
 
     @Override
-    public void onUpdateReceived(Update update) {
+    public void onUpdateReceived(Update update){
+        //создаем/используем поток при получении сообщения
+        executorService.submit(() -> handleUpdate(update));
+    }
+
+    private void handleUpdate(Update update){
         if(update.hasCallbackQuery()){
-            //getCallBackQuery дает те же возможности что и message, но получить message можно только из CallBackQuery.getMessage
-            long chatId = update.getCallbackQuery().getMessage().getChatId();
-
-            //удаление статуса создания папки
-            canAddFolder.remove(chatId);
-
-            String data = update.getCallbackQuery().getData();
-            System.out.println(data);
-            if(data.contains("Folder")){
-                try {
-                    long messageId = update.getCallbackQuery().getMessage().getMessageId();
-                    sendEditMessageResponse(chatId, data, messageId);
-                }catch (IOException | TelegramApiException e){
-                    throw new RuntimeException(e);
-                }
-            }else if(data.equals("FileButtonPressed")){
-                try {
-                    long messageId = update.getCallbackQuery().getMessage().getMessageId();
-                    sendEditMessageResponse(chatId, data, messageId);
-                }catch (IOException | TelegramApiException e){
-                    throw new RuntimeException(e);
-                }
-            }else if(data.contains("File")){
-                int messageId = update.getCallbackQuery().getMessage().getMessageId();
-                try {
-                    DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
-                    //устанавливаем удаляемое сообщение
-                    execute(deleteMessage);
-                    SendDocument sendDocument = FilesAndFolders.sendMessageWithDoc(data, chatId);
-                    execute(sendDocument);
-                    sendNewMessageResponse(chatId, "/start");
-                } catch (TelegramApiException e) {
-                    try {
-                        sendNewMessageResponse(chatId, "/error");
-                    } catch (TelegramApiException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                    throw new RuntimeException(e);
-                }
-            }{
-                System.out.println("try");
-                try {
-                    long messageId = update.getCallbackQuery().getMessage().getMessageId();
-                    sendEditMessageResponse(chatId, data, messageId);
-                } catch (IOException | TelegramApiException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            hasCallbackQuery(update);
         }else if(update.getMessage().hasDocument()){
-            long chatId = update.getMessage().getChatId();
-            System.out.println("hasDoc");
-            //удаление статуса создания папки
-            canAddFolder.remove(chatId);
+            hasDocument(update);
+        }else{
+            hasText(update);
+        }
+    }
 
-            if(selectedPath.containsKey((Long) chatId) && !selectedPath.get((Long) chatId).isEmpty()) {
-                Document document = update.getMessage().getDocument();
-                System.out.println("doc");
-                saveFile(document, chatId, update.getMessage().getCaption());
-            }else{
-                System.out.println("sendMessage");
-                SendMessage message = new SendMessage();
-                try {
-                    Messages.sendMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
-                    execute(message);
-                } catch (TelegramApiException e) {
-                    throw new RuntimeException(e);
-                }
+    private void hasCallbackQuery(Update update){
+        //getCallBackQuery дает те же возможности что и message, но получить message можно только из CallBackQuery.getMessage
+        long chatId = update.getCallbackQuery().getMessage().getChatId();
+        //удаление статуса создания папки
+        canAddFolder.remove(chatId);
+        String data = update.getCallbackQuery().getData();
+        System.out.println(data);
+        if(data.contains("Folder")){
+            try {
+                long messageId = update.getCallbackQuery().getMessage().getMessageId();
+                sendEditMessageResponse(chatId, data, messageId);
+            }catch (IOException | TelegramApiException e){
+                throw new RuntimeException(e);
             }
-        }else if(update.getMessage().getText().equals("/start")){
+        }else if(data.equals("FileButtonPressed")){
+            try {
+                long messageId = update.getCallbackQuery().getMessage().getMessageId();
+                sendEditMessageResponse(chatId, data, messageId);
+            }catch (IOException | TelegramApiException e){
+                throw new RuntimeException(e);
+            }
+        }else if(data.contains("File")){
+            int messageId = update.getCallbackQuery().getMessage().getMessageId();
+            try {
+                DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
+                //устанавливаем удаляемое сообщение
+                execute(deleteMessage);
+                SendDocument sendDocument = FilesAndFolders.sendMessageWithDoc(data, chatId);
+                execute(sendDocument);
+                sendNewMessageResponse(chatId, "/start");
+            } catch (TelegramApiException e) {
+                try {
+                    sendNewMessageResponse(chatId, "/error");
+                } catch (TelegramApiException ex) {
+                    throw new RuntimeException(ex);
+                }
+                throw new RuntimeException(e);
+            }
+        }else{
+            System.out.println("try");
+            try {
+                long messageId = update.getCallbackQuery().getMessage().getMessageId();
+                sendEditMessageResponse(chatId, data, messageId);
+            } catch (IOException | TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void hasDocument(Update update){
+        long chatId = update.getMessage().getChatId();
+        System.out.println("hasDoc");
+        //удаление статуса создания папки
+        canAddFolder.remove(chatId);
+
+        if(selectedPath.containsKey((Long) chatId) && !selectedPath.get((Long) chatId).isEmpty()) {
+            Document document = update.getMessage().getDocument();
+            System.out.println("doc");
+            saveFile(document, chatId, update.getMessage().getCaption());
+        }else{
+            System.out.println("sendMessage");
+            SendMessage message = new SendMessage();
+            try {
+                Messages.sendMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
+                execute(message);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void hasText(Update update){
+        if(update.getMessage().getText().equals("/start")){
             long chatId = update.getMessage().getChatId();
             try {
                 sendNewMessageResponse(chatId, "/start");
@@ -155,17 +177,14 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
-
             //обращение к TelegramAPI для получения инфы о файле
             String fullFilePath = "https://api.telegram.org/file/bot" + bot_token + "/" + filePath;
-
-            InputStream is = new URL(fullFilePath).openStream();
             //открываем поток для чтения
+            InputStream is = new URL(fullFilePath).openStream();
             String fileName = document.getFileName();
             System.out.println(fileName + "filename");
-            String extension = fileName.substring(fileName.lastIndexOf("."));
             //получаем расширение файла
-
+            String extension = fileName.substring(fileName.lastIndexOf("."));
             if(text != null) {
                 System.out.println(1);
                 Files.copy(is, Paths.get(selectedPath.get((Long) chatId) + "\\" + text +  extension));
@@ -176,15 +195,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             //копируем файл из потока в путь
             is.close();
             sendNewMessageResponse(chatId, "FileSaved");
-
         } catch (TelegramApiException | IOException e) {
             throw new RuntimeException(e);
         }
     }
-
-
-
-
 
     private void sendNewMessageResponse(long chatid, String data) throws TelegramApiException{
         //метод для ОТПРАВКИ сообщения
@@ -219,7 +233,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 break;
         }
     }
-
 
     public boolean sendEditMessageResponse(long chatId, String data, long messageID) throws IOException, TelegramApiException {
         //метод для ИЗМЕНЕНИЯ существующего сообщения / метод возвращает bool чтобы остановить выполнение когда нужно
@@ -338,7 +351,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         System.out.println("Сохранение в кэш: " + cache.get(siteObj.get(chatId)).toString());
         return true;
     }
-
 
     @Override
     public String getBotUsername() {
