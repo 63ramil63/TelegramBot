@@ -1,9 +1,7 @@
 package org.example;
 
-import org.example.bot.TelegramBot;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
@@ -15,12 +13,12 @@ public class ParseSite {
     private static Document doc;
     public static String url = "https://lk.ks.psuti.ru/?mn=2&obj=";
 
-    public static String getDay(String _day, Long chatId) throws IOException {
-        System.out.println("get Day");
-        doc = Jsoup.connect(url + TelegramBot.siteObj.get(chatId)).userAgent("Chrome").get();
+    public static String getDay(String _day, String obj) throws IOException {
+        System.out.println("Parsing site for obj = " + obj);
+        doc = Jsoup.connect(url + obj).userAgent("Chrome").get();
         int num = 1;
-
         while(num < 60){
+            //перебор эл сайта до нахождения нужной даты
             if(match(_day, num, doc)){
                 //проверка на совпадение дат
                 num++;
@@ -29,18 +27,17 @@ public class ParseSite {
             }
             num++;
         }
-
         Elements week = doc.select("body > table:nth-child(4) > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(8) > a");
-        String wk = week.attr("href");
         //получаем неделю
+        String wk = week.attr("href");
         int index = wk.indexOf("wk");
-        wk = wk.substring(index);
         //удаляем ненужное
-
+        wk = wk.substring(index);
         num = 1;
-
+        //получаем расписание, которое располагается на след неделе при помощи атрибута wk
+        Document newDoc = Jsoup.connect(url+obj+"&"+wk).userAgent("Chrome").get();
         while(num < 60){
-            Document newDoc = Jsoup.connect(url+"&"+wk).userAgent("Chrome").get();
+            //перебор эл сайта до нахождения нужной даты
             if(match(_day, num, newDoc)){
                 num++;
                 String lessons = getLesson(num);
@@ -48,12 +45,11 @@ public class ParseSite {
             }
             num++;
         }
-
-
-        return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=" + TelegramBot.siteObj.get(chatId);
+        return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=" + obj;
     }
 
     public static boolean match(String _day, int num, Document doc){
+        //перебор эл сайта до нахождения нужной даты
         Elements day = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
         return day.text().contains(_day);
     }
@@ -71,11 +67,11 @@ public class ParseSite {
             num++;
             lessons += "\n" + _number.text() + ") " + _time.text() + " " + _lesson.text();
         }
+        //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
         lessons = lessons.replaceAll("\\s+$", "");
         lessons = lessons.substring(0, lessons.length() - 1);
         lessons = lessons.replaceAll("Московское шоссе, 120", "");
         lessons = lessons.replaceAll(" Замена Свободное время на:", "");
-        //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
         return lessons;
     }
 

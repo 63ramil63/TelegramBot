@@ -19,40 +19,33 @@ import java.util.List;
 
 public class FilesAndFolders {
     public static InlineKeyboardMarkup getFilesFromFolder(String path){
-
+        System.err.println("Path to get: " + path);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-
         //поиск файлов из указанной директории
         try(DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path))){
             stream.forEach(path1 -> {
                 List<InlineKeyboardButton> row = new ArrayList<>();
                 //удаление пути из названия файлов
                 String fileName = path1.toString().replace(path, "");
-                System.out.println("fileName: " + fileName);
                 if(!Files.isDirectory(path1)){
                     //удаление из навзания лишней '\'
                     row.add(Messages.setButton(fileName.replace("\\", ""), path1 +  "File"));
-                    System.out.println(fileName + " ^^^");
                 }else{
                     row.add(Messages.setButton(fileName, path1 + "Folder"));
                 }
                 keyboard.add(row);
             });
-
             //добавление кнопки назад
             List<InlineKeyboardButton> row = new ArrayList<>();
-
             if(path.equals(TelegramBot.path)){
                 row.add(Messages.setButton("Добавить папку", "AddFolderButtonPressed"));
             }
-
             row.add(Messages.setButton("Назад", "BackButtonPressed"));
             keyboard.add(row);
-
             markup.setKeyboard(keyboard);
         }catch (IOException e){
-            System.out.println(e + " 1");
+            System.out.println(e);
         }
         return markup;
     }
@@ -65,9 +58,6 @@ public class FilesAndFolders {
         message.setDocument(new InputFile(new File(correctFileName)));
         return message;
     }
-
-
-
 
     public static void addFolder(String text) throws IOException {
         if(!Files.isDirectory(Path.of(TelegramBot.path  + text))){
