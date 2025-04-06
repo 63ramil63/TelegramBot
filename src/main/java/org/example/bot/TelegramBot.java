@@ -1,5 +1,6 @@
 package org.example.bot;
 
+import com.fasterxml.jackson.databind.jsontype.impl.AsDeductionTypeDeserializer;
 import org.example.Files.FilesAndFolders;
 import org.example.Main;
 import org.example.ParseSite;
@@ -15,6 +16,7 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.Document;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.FileInputStream;
@@ -25,7 +27,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,6 +40,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private static final Logger log = LoggerFactory.getLogger(TelegramBot.class);
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final HashMap<String, CachedLessons> lessonsCache = new HashMap<>();
+    public static HashMap<String, InlineKeyboardMarkup> yearsAndGroupsCache = new HashMap<>();
     private String bot_token;
     private String bot_name;
     private String duration;
@@ -343,8 +348,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 UserRepository.setCanAddFolder(chatId, 1);
                 return true;
             case "selectYearButtonPressed":
-                System.out.println("selectYearButton");
-                Messages.editMessage(message, Messages.setSelectYearButtons(), chatId, "Выберите курс");
+                System.out.println("User pressed selectYearButton. User's Id is: " + chatId);
+                if(!yearsAndGroupsCache.containsKey("Year")){
+                    Messages.setSelectYearButtons();
+                }
+                Messages.editMessage(message, yearsAndGroupsCache.get("Year"), chatId, "Выберите курс");
                 execute(message);
                 return true;
         }
@@ -372,14 +380,18 @@ public class TelegramBot extends TelegramLongPollingBot {
             num = num.replace("Year", "");
             //удаляем не нужное
             int number = Integer.parseInt(num);
-            Messages.editMessage(message, Messages.setGroupSelectButtons(number), chatId, "Выберите группу");
+            if(!yearsAndGroupsCache.containsKey("Group"+number)){
+                //получаем группы и сохраняем в yearsAndGroupsCache
+                Messages.setGroupSelectButtons(number);
+            }
+            Messages.editMessage(message, yearsAndGroupsCache.get("Groups"+number), chatId, "Выберите группу");
             execute(message);
             return true;
         }else if(data.contains("Group")){
-            int index = data.indexOf("Group");
             //получаем индекс начала Group
-            String group = data.substring(index);
+            int index = data.indexOf("Group");
             //получаем obj группы
+            String group = data.substring(index);
             group = group.replace("Group=", "");
             if(!UserRepository.getUser(chatId)){
                 Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Ошибка! Напишите /start для продолжения");
@@ -442,8 +454,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
         public boolean isExpired(){
-            return System.currentTimeMillis() - timestamp > TimeUnit.MINUTES.toMillis(duration);
             //текущее время - время создания > времени существования
+            return System.currentTimeMillis() - timestamp > TimeUnit.MINUTES.toMillis(duration);
         }
     }
 }

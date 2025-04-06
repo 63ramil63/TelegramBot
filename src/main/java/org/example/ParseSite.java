@@ -92,7 +92,6 @@ public class ParseSite {
     }
 
     public static List<String> getGroups(int num) throws IOException {
-        System.out.println("getGroups");
         Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").get();
         List<String> groups = new ArrayList<>();
         Elements elementsSize = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(7) > td:nth-child(" + num + ") > table > tbody > tr:nth-child(1) > td > table > tbody > tr");

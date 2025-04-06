@@ -1,6 +1,7 @@
 package org.example.messages;
 
 import org.example.ParseSite;
+import org.example.bot.TelegramBot;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -100,14 +101,14 @@ public class Messages {
         return markup;
     }
 
-    public static InlineKeyboardMarkup setSelectYearButtons() throws IOException {
+    public static void setSelectYearButtons() throws IOException {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<String> years = ParseSite.getYear();
         for (String year : years) {
             int index = year.indexOf("Year");
             //индекс, который указывает на год
             String num = year.substring(index);
-            //получаем строку формата /число
+            //получаем строку формата Year'число'
             year = year.replace(num, "");
             //удаляем из строки Year(что то там)
             List<InlineKeyboardButton> row = new ArrayList<>();
@@ -121,10 +122,10 @@ public class Messages {
         keyboard.add(row);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
-        return markup;
+        TelegramBot.yearsAndGroupsCache.put("Year", markup);
     }
 
-    public static InlineKeyboardMarkup setGroupSelectButtons(int i) throws IOException {
+    public static void setGroupSelectButtons(int i) throws IOException {
         System.out.println("setGroupButton");
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<String> groups = ParseSite.getGroups(i);
@@ -146,6 +147,6 @@ public class Messages {
         keyboard.add(row);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
-        return markup;
+        TelegramBot.yearsAndGroupsCache.put("Groups" + i, markup);
     }
 }
