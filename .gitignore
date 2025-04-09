@@ -25,3 +25,5 @@ replay_pid*
 /src/test/
 target/*
 src/main/resources/config.properties
+.idea/artifacts/TelegramBot_jar.xml
+src/main/resources/META-INF/MANIFEST.MF

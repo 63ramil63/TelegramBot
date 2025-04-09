@@ -15,10 +15,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 
 public class FilesAndFolders {
-    public static InlineKeyboardMarkup getFilesFromFolder(String path){
+    private final ExecutorService executorService;
+
+    public FilesAndFolders(ExecutorService executorService){
+        this.executorService = executorService;
+    }
+
+    public InlineKeyboardMarkup getFilesFromFolder(String path){
         System.err.println("Path to get: " + path);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
@@ -50,7 +57,7 @@ public class FilesAndFolders {
         return markup;
     }
 
-    public static SendDocument sendMessageWithDoc(String fileName, long chatId){
+    public SendDocument sendMessageWithDoc(String fileName, long chatId){
         //File$ - регулярное выражение которое удаляет одно вхождение с конца
         String correctFileName = fileName.replaceAll("File$", "");
         SendDocument message = new SendDocument();
@@ -59,7 +66,18 @@ public class FilesAndFolders {
         return message;
     }
 
-    public static void addFolder(String text) throws IOException {
+    //асинхронное добавление файлов
+    public void addFolderAsync(String text){
+        executorService.submit(() -> {
+            try {
+                addFolder(text);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public void addFolder(String text) throws IOException {
         if(!Files.isDirectory(Path.of(TelegramBot.path  + text))){
             Files.createDirectory(Path.of(TelegramBot.path + text));
         }

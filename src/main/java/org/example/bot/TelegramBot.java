@@ -42,6 +42,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private String bot_name;
     private String duration;
     public static String path;
+    private FilesAndFolders filesAndFolders;
     //newCachedThreadPool - создает пул потоков, который может создавать новые потоки по мере необходимости, но при этом повторно использовать ранее созданные потоки, если они свободны
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -52,6 +53,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     //загрузка данных из файла конфига
     public void loadConfig(){
         Properties properties = new Properties();
+        filesAndFolders = new FilesAndFolders(executorService);
         try(FileInputStream fileInputStream = new FileInputStream(Main.propertyPath)){
             properties.load(fileInputStream);
             bot_token = properties.getProperty("bot_token");
@@ -108,7 +110,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
                 //устанавливаем удаляемое сообщение
                 execute(deleteMessage);
-                SendDocument sendDocument = FilesAndFolders.sendMessageWithDoc(data, chatId);
+                SendDocument sendDocument = filesAndFolders.sendMessageWithDoc(data, chatId);
                 execute(sendDocument);
                 sendNewMessageResponse(chatId, "/start");
             } catch (TelegramApiException e) {
@@ -151,7 +153,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }else{
             SendMessage message = new SendMessage();
             try {
-                Messages.sendMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
+                Messages.sendMessage(message, filesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
                 execute(message);
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
@@ -255,7 +257,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 break;
             default:
                 try {
-                    FilesAndFolders.addFolder(data);
+                    filesAndFolders.addFolder(data);
                     Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Директория создана");
                     execute(message);
                     UserRepository.setCanAddFolder(chatid, 0);
@@ -336,7 +338,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 execute(message);
                 return true;
             case "FileButtonPressed":
-                Messages.editMessage(message, FilesAndFolders.getFilesFromFolder(path), chatId, "Выберите вашу папку вашей группы");
+                Messages.editMessage(message, filesAndFolders.getFilesFromFolder(path), chatId, "Выберите вашу папку вашей группы");
                 execute(message);
                 return true;
             case "AddFolderButtonPressed":
@@ -359,7 +361,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             //путь директории
             String path1 = data.replace("Folder", "");
             System.out.println(path1);
-            Messages.editMessage(message, FilesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
+            Messages.editMessage(message, filesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
             execute(message);
             if(UserRepository.getUser(chatId)){
                 UserRepository.setFilePath(chatId, path1);
