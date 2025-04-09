@@ -1,6 +1,5 @@
 package org.example.bot;
 
-import com.fasterxml.jackson.databind.jsontype.impl.AsDeductionTypeDeserializer;
 import org.example.Files.FilesAndFolders;
 import org.example.Main;
 import org.example.ParseSite;
@@ -27,9 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
