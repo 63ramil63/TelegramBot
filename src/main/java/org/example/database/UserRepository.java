@@ -21,10 +21,9 @@ public class UserRepository {
         System.out.println("Get User");
         String sql = "select Name from users where Id=?";
         try(Connection connection = dataBaseConnection.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            System.out.println("try");
+            PreparedStatement preparedStatement = connection.prepareStatement(sql)){
             //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setString(1, String.valueOf(chatId));
+            preparedStatement.setLong(1, chatId);
             ResultSet resultSet = preparedStatement.executeQuery();
             System.out.println(resultSet);
             //проверяем есть ли запись
@@ -46,7 +45,7 @@ public class UserRepository {
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
             //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setString(1, String.valueOf(chatId));
+            preparedStatement.setLong(1, chatId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()){
                 String result = resultSet.getNString("Obj");
@@ -67,7 +66,7 @@ public class UserRepository {
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
             //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setString(1, String.valueOf(chatId));
+            preparedStatement.setLong(1, chatId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()){
                 String result = resultSet.getNString("FilePath");
@@ -82,12 +81,28 @@ public class UserRepository {
         return "Not found";
     }
 
+    public static String getUserFullName(long chatId){
+        String sql = "select FullName from users where Id=?";
+        try(Connection connection = dataBaseConnection.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(sql)){
+            preparedStatement.setLong(1, chatId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()){
+                return resultSet.getNString("FullName");
+            }
+        }catch(SQLException e){
+            System.out.println(e);
+            throw new RuntimeException(e);
+        }
+        return "Not found";
+    }
+
     public static boolean getCanAddFolder(long chatId){
         String sql = "select CanAddFolder from users where Id=?";
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
             //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setString(1, String.valueOf(chatId));
+            preparedStatement.setLong(1, chatId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()){
                 int result = resultSet.getInt("CanAddFolder");
@@ -109,7 +124,7 @@ public class UserRepository {
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
             //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setString(1, String.valueOf(chatId));
+            preparedStatement.setLong(1, chatId);
             int rowsAffected = preparedStatement.executeUpdate();
             if(rowsAffected == 0){
                 System.out.println("Не найдено пользователя с Id: " + chatId);
@@ -124,7 +139,7 @@ public class UserRepository {
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
             preparedStatement.setString(1, obj);
-            preparedStatement.setString(2, String.valueOf(chatId));
+            preparedStatement.setLong(1, chatId);
             int rowsAffected = preparedStatement.executeUpdate();
             if(rowsAffected == 0){
                 System.out.println("Не найдено пользователя с Id: " + chatId);
@@ -140,7 +155,7 @@ public class UserRepository {
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, filePath);
-            preparedStatement.setString(2, String.valueOf(chatId));
+            preparedStatement.setLong(1, chatId);
             int rowsAffected = preparedStatement.executeUpdate();
             if(rowsAffected == 0){
                 System.out.println("Не найдено пользователя с Id: " + chatId);
@@ -155,7 +170,8 @@ public class UserRepository {
         String sql = "update users set CanAddFolder = ? where Id =?";
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, String.valueOf(bool));
+            //bool имеет значение 0 или 1
+            preparedStatement.setInt(1, bool);
             preparedStatement.setString(2, String.valueOf(chatId));
             int rowsAffected = preparedStatement.executeUpdate();
             if(rowsAffected == 0){
@@ -167,11 +183,27 @@ public class UserRepository {
         }
     }
 
-    public static void setName(long chatId, String name){
+    public static void setUserFullName(long chatId, String fullName){
+        String sql = "update users set FullName=? where Id=?";
+        try(Connection connection = dataBaseConnection.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(sql)){
+            preparedStatement.setString(1, fullName);
+            preparedStatement.setLong(2, chatId);
+            int rowsAffected = preparedStatement.executeUpdate();
+            if(rowsAffected == 0){
+                System.out.println("Не найдено пользователя с Id: " + chatId);
+            }
+        }catch (SQLException e){
+            System.out.println(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void setUserName(long chatId, String userName){
         String sql = "update users set name=? where Id=?";
         try(Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
-            preparedStatement.setString(1, name);
+            preparedStatement.setString(1, userName);
             preparedStatement.setString(2, String.valueOf(chatId));
             int rowsAffected = preparedStatement.executeUpdate();
             if(rowsAffected == 0){

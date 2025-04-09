@@ -26,7 +26,7 @@ public class FilesAndFolders {
     }
 
     public InlineKeyboardMarkup getFilesFromFolder(String path){
-        System.err.println("Path to get: " + path);
+        System.out.println("Get files/folders from: " + path);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         //поиск файлов из указанной директории
@@ -36,9 +36,10 @@ public class FilesAndFolders {
                 //удаление пути из названия файлов
                 String fileName = path1.toString().replace(path, "");
                 if(!Files.isDirectory(path1)){
-                    //удаление из навзания лишней '\'
+                    //удаление из названия лишней '\', добавляем File чтобы можно было определить что мы нажимаем именно на файл
                     row.add(Messages.setButton(fileName.replace("\\", ""), path1 +  "File"));
                 }else{
+                    //добавляем Folder, чтобы можно было определить, что это директория
                     row.add(Messages.setButton(fileName, path1 + "Folder"));
                 }
                 keyboard.add(row);
@@ -57,13 +58,16 @@ public class FilesAndFolders {
         return markup;
     }
 
-    public SendDocument sendMessageWithDoc(String fileName, long chatId){
+    public void sendMessageWithDocAsync(SendDocument message ,String fileName, long chatId){
+        executorService.submit(() -> sendMessageWithDoc(message, fileName, chatId));
+    }
+
+    public void sendMessageWithDoc(SendDocument message ,String fileName, long chatId){
+        System.out.println("Send document to user with chatID: " + chatId + "\n Document name is: " + fileName);
         //File$ - регулярное выражение которое удаляет одно вхождение с конца
         String correctFileName = fileName.replaceAll("File$", "");
-        SendDocument message = new SendDocument();
         message.setChatId((Long) chatId);
         message.setDocument(new InputFile(new File(correctFileName)));
-        return message;
     }
 
     //асинхронное добавление файлов
