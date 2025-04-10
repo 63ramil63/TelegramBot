@@ -29,11 +29,9 @@ public class UserRepository {
             System.out.println(resultSet);
             //проверяем есть ли запись
             if (resultSet.next()) {
-                System.out.println("return true");
                 return true;
             }
         } catch (SQLException e) {
-            System.out.println("error");
             System.out.println(e);
             throw new RuntimeException(e);
         }
@@ -140,7 +138,7 @@ public class UserRepository {
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, obj);
-            preparedStatement.setLong(1, chatId);
+            preparedStatement.setLong(2, chatId);
             int rowsAffected = preparedStatement.executeUpdate();
             if (rowsAffected == 0) {
                 System.out.println("Не найдено пользователя с Id: " + chatId);
@@ -167,12 +165,12 @@ public class UserRepository {
         }
     }
 
-    public static void setCanAddFolder(long chatId, int bool) {
+    public static void setCanAddFolder(long chatId, byte bool) {
         String sql = "update users set CanAddFolder = ? where Id =?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //bool имеет значение 0 или 1
-            preparedStatement.setInt(1, bool);
+            preparedStatement.setByte(1, bool);
             preparedStatement.setString(2, String.valueOf(chatId));
             int rowsAffected = preparedStatement.executeUpdate();
             if (rowsAffected == 0) {

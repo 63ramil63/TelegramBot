@@ -89,7 +89,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         long chatId = update.getCallbackQuery().getMessage().getChatId();
         //удаление статуса создания папки
         if (UserRepository.getUser(chatId) && UserRepository.getCanAddFolder(chatId)) {
-            UserRepository.setCanAddFolder(chatId, 1);
+            UserRepository.setCanAddFolder(chatId, (byte) 1);
         }
         String data = update.getCallbackQuery().getData();
         System.out.println("User pressed button. User's chatId: " + chatId + " | CallbackQuery is: " + data);
@@ -148,7 +148,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             UserRepository.setUserName(chatId, name);
         }
         //удаление статуса создания папки
-        UserRepository.setCanAddFolder(chatId, 0);
+        UserRepository.setCanAddFolder(chatId, (byte) 0);
         String selectedPath = UserRepository.getFilePath(chatId);
         if (!selectedPath.isEmpty()) {
             Document document = update.getMessage().getDocument();
@@ -265,7 +265,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 filesAndFolders.addFolderAsync(data);
                 Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Директория создана");
                 execute(message);
-                UserRepository.setCanAddFolder(chatid, 0);
+                UserRepository.setCanAddFolder(chatid, (byte) 0);
                 break;
         }
     }
@@ -276,7 +276,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         message.setMessageId((int) messageID);
         switch (data) {
             case "LessonButtonPressed":
-                System.out.println("LessonPressed");
                 Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите дату");
                 execute(message);
                 return;
@@ -284,13 +283,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 //проверка пользователя в бд
                 if (!UserRepository.getUser(chatId)) {
                     UserRepository.addUser(chatId);
-                    Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
-                    execute(message);
-                    return;
                 }
                 String obj = UserRepository.getObj(chatId);
+                System.err.println(obj + "================obj");
                 //если юзер не выбрал группу, то просим его это сделать
-                if (obj.equals("Not found") || obj == null || obj.isEmpty()) {
+                if (obj.equals("Not found")) {
                     Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
                     execute(message);
                     return;
@@ -310,14 +307,12 @@ public class TelegramBot extends TelegramLongPollingBot {
                 //проверка пользователя в бд
                 if (!UserRepository.getUser(chatId)) {
                     UserRepository.addUser(chatId);
-                    Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
-                    execute(message);
                     return;
                 }
                 String obj1 = UserRepository.getObj(chatId);
                 //если юзер не выбрал группу, то просим его это сделать
-                if (obj1.equals("Not found") || obj1 == null || obj1.isEmpty()) {
-                    Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
+                if (obj1.equals("Not found")) {
+                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
                     execute(message);
                     return;
                 }
@@ -341,12 +336,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 execute(message);
                 return;
             case "AddFolderButtonPressed":
-                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Напишите название директории \n пишите без пробелов и спец.символов");
+                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Напишите название директории \n пишите без спец.символов");
                 execute(message);
-                UserRepository.setCanAddFolder(chatId, 1);
+                UserRepository.setCanAddFolder(chatId, (byte) 1);
                 return;
             case "selectYearButtonPressed":
-                System.out.println("User pressed selectYearButton. User's Id is: " + chatId);
                 if (!yearsAndGroupsCache.containsKey("Year")) {
                     Messages.setSelectYearButtons();
                 }
