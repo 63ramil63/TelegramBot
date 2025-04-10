@@ -126,7 +126,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 throw new RuntimeException(e);
             }
         } else {
-            System.out.println("try");
             try {
                 long messageId = update.getCallbackQuery().getMessage().getMessageId();
                 sendEditMessageResponse(chatId, data, messageId);
@@ -285,46 +284,48 @@ public class TelegramBot extends TelegramLongPollingBot {
                     UserRepository.addUser(chatId);
                 }
                 String obj = UserRepository.getObj(chatId);
-                System.err.println(obj + "================obj");
-                //если юзер не выбрал группу, то просим его это сделать
                 if (obj.equals("Not found")) {
-                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
+                    if (!yearsAndGroupsCache.containsKey("Year")) {
+                        sendEditMessageResponse(chatId, "SelectYearButtonPressed", messageID);
+                    } else {
+                        //если юзер не выбрал группу, то просим его это сделать
+                        Messages.editMessage(message, yearsAndGroupsCache.get("Year"), chatId, "Выберите группу, чтобы получить расписание");
+                    }
                     execute(message);
                     return;
-                }
-                //пытаемся вернуть значение из кэша
-                if (lessonsCache.containsKey(obj) && !lessonsCache.get(obj).isExpired()) {
+                } else if (lessonsCache.containsKey(obj) && !lessonsCache.get(obj).isExpired()) {
+                    //пытаемся вернуть значение из кэша
                     Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj).lessonsToday);
-                    execute(message);
-                    return;
+                } else {
+                    //если значение из кэша является не актуальным
+                    getLessons(obj);
+                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj).lessonsToday);
                 }
-                //если значение из кэша является не актуальным
-                getLessons(obj);
-                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj).lessonsToday);
                 execute(message);
                 return;
             case "TomorrowLessonsButtonPressed":
                 //проверка пользователя в бд
                 if (!UserRepository.getUser(chatId)) {
                     UserRepository.addUser(chatId);
-                    return;
                 }
                 String obj1 = UserRepository.getObj(chatId);
-                //если юзер не выбрал группу, то просим его это сделать
                 if (obj1.equals("Not found")) {
-                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
+                    if (!yearsAndGroupsCache.containsKey("Year")) {
+                        sendEditMessageResponse(chatId, "SelectYearButtonPressed", messageID);
+                    } else {
+                        //если юзер не выбрал группу, то просим его это сделать
+                        Messages.editMessage(message, yearsAndGroupsCache.get("Year"), chatId, "Выберите группу, чтобы получить расписание");
+                    }
                     execute(message);
                     return;
-                }
-                //пытаемся вернуть значение из кэша
-                if (lessonsCache.containsKey(obj1) && !lessonsCache.get(obj1).isExpired()) {
+                }else if (lessonsCache.containsKey(obj1) && !lessonsCache.get(obj1).isExpired()) {
+                    //пытаемся вернуть значение из кэша
                     Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj1).lessonsTomorrow);
-                    execute(message);
-                    return;
+                } else {
+                    //если значение из кэша является не актуальным
+                    getLessons(obj1);
+                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj1).lessonsTomorrow);
                 }
-                //если значение из кэша является не актуальным
-                getLessons(obj1);
-                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj1).lessonsTomorrow);
                 execute(message);
                 return;
             case "BackButtonPressed":
@@ -340,7 +341,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 execute(message);
                 UserRepository.setCanAddFolder(chatId, (byte) 1);
                 return;
-            case "selectYearButtonPressed":
+            case "SelectYearButtonPressed":
                 if (!yearsAndGroupsCache.containsKey("Year")) {
                     Messages.setSelectYearButtons();
                 }
@@ -360,9 +361,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             } else {
                 UserRepository.addUser(chatId);
                 UserRepository.setFilePath(chatId, path1);
-                return;
             }
-            return;
         } else if (data.contains("Year")) {
             int index = data.indexOf("Year");
             //получаем индекс начала Year
@@ -378,27 +377,20 @@ public class TelegramBot extends TelegramLongPollingBot {
             //получаем из кэша группы
             Messages.editMessage(message, yearsAndGroupsCache.get("Groups" + number), chatId, "Выберите группу");
             execute(message);
-            return;
         } else if (data.contains("Group")) {
             //получаем индекс начала Group
             int index = data.indexOf("Group");
             //получаем obj группы
             String group = data.substring(index);
             group = group.replace("Group=", "");
+
             if (!UserRepository.getUser(chatId)) {
                 UserRepository.addUser(chatId);
-                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Ошибка! Напишите /start для продолжения");
-                execute(message);
+                UserRepository.setObj(chatId, group);
             } else {
-                if (!UserRepository.getUser(chatId)) {
-                    UserRepository.addUser(chatId);
-                    Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
-                    execute(message);
-                    return;
-                }
                 UserRepository.setObj(chatId, group);
             }
-            Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Группа сохранена");
+            Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Группа сохранена");
             execute(message);
         }
     }
@@ -408,7 +400,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (lessonsCache.containsKey(obj) && lessonsCache.get(obj).isExpired()) {
             lessonsCache.remove(obj);
         }
-        System.out.println("Get lessons for Obj = " + obj);
         LocalDate localDate = LocalDate.now();
         String today = localDate.format(dateTimeFormatter);
         LocalDate localDateTomorrow = LocalDate.now().plusDays(1);

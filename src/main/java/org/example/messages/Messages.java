@@ -52,7 +52,7 @@ public class Messages {
         row.add(tomorrow);
         //добавляем в ряд кнопки
 
-        InlineKeyboardButton selectYear = setButton("Выбрать курс", "selectYearButtonPressed");
+        InlineKeyboardButton selectYear = setButton("Выбрать курс", "SelectYearButtonPressed");
         //кнопка для выбора курса
         List<InlineKeyboardButton> row1 = new ArrayList<>();
         row1.add(selectYear);
