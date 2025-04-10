@@ -46,65 +46,68 @@ public class TelegramBot extends TelegramLongPollingBot {
     //newCachedThreadPool - создает пул потоков, который может создавать новые потоки по мере необходимости, но при этом повторно использовать ранее созданные потоки, если они свободны
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    public TelegramBot(){
+    public TelegramBot() {
         loadConfig();
     }
 
     //загрузка данных из файла конфига
-    public void loadConfig(){
+    public void loadConfig() {
         Properties properties = new Properties();
         filesAndFolders = new FilesAndFolders(executorService);
-        try(FileInputStream fileInputStream = new FileInputStream(Main.propertyPath)){
+        try (FileInputStream fileInputStream = new FileInputStream(Main.propertyPath)) {
             properties.load(fileInputStream);
             bot_token = properties.getProperty("bot_token");
             bot_name = properties.getProperty("bot_name");
             duration = properties.getProperty("duration");
             path = properties.getProperty("path");
-        }catch (IOException e){
+        } catch (IOException e) {
             log.error("e: ", e);
         }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            executorService.close();
+        }));
     }
 
     @Override
-    public void onUpdateReceived(Update update){
+    public void onUpdateReceived(Update update) {
         //создаем/используем поток при получении сообщения
         executorService.submit(() -> handleUpdate(update));
     }
 
-    private void handleUpdate(Update update){
-        if(update.hasCallbackQuery()){
+    private void handleUpdate(Update update) {
+        if (update.hasCallbackQuery()) {
             hasCallbackQuery(update);
-        }else if(update.getMessage().hasDocument()){
+        } else if (update.getMessage().hasDocument()) {
             hasDocument(update);
-        }else{
+        } else {
             hasText(update);
         }
     }
 
-    private void hasCallbackQuery(Update update){
+    private void hasCallbackQuery(Update update) {
         //getCallBackQuery дает те же возможности что и message, но получить message можно только из CallBackQuery.getMessage
         long chatId = update.getCallbackQuery().getMessage().getChatId();
         //удаление статуса создания папки
-        if(UserRepository.getUser(chatId) && UserRepository.getCanAddFolder(chatId)) {
+        if (UserRepository.getUser(chatId) && UserRepository.getCanAddFolder(chatId)) {
             UserRepository.setCanAddFolder(chatId, 1);
         }
         String data = update.getCallbackQuery().getData();
         System.out.println("User pressed button. User's chatId: " + chatId + " | CallbackQuery is: " + data);
-        if(data.contains("Folder")){
+        if (data.contains("Folder")) {
             try {
                 long messageId = update.getCallbackQuery().getMessage().getMessageId();
                 sendEditMessageResponse(chatId, data, messageId);
-            }catch (IOException | TelegramApiException e){
+            } catch (IOException | TelegramApiException e) {
                 throw new RuntimeException(e);
             }
-        }else if(data.equals("FileButtonPressed")){
+        } else if (data.equals("FileButtonPressed")) {
             try {
                 long messageId = update.getCallbackQuery().getMessage().getMessageId();
                 sendEditMessageResponse(chatId, data, messageId);
-            }catch (IOException | TelegramApiException e){
+            } catch (IOException | TelegramApiException e) {
                 throw new RuntimeException(e);
             }
-        }else if(data.contains("File")){
+        } else if (data.contains("File")) {
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
             try {
                 DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
@@ -122,7 +125,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 throw new RuntimeException(e);
             }
-        }else{
+        } else {
             System.out.println("try");
             try {
                 long messageId = update.getCallbackQuery().getMessage().getMessageId();
@@ -133,11 +136,11 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void hasDocument(Update update){
+    private void hasDocument(Update update) {
         long chatId = update.getMessage().getChatId();
         //проверка есть ли пользователь в бд
         System.out.println("User sends DOCUMENT. Checking user in database with chatId: " + chatId);
-        if(!UserRepository.getUser(chatId)){
+        if (!UserRepository.getUser(chatId)) {
             System.out.println("No USER in database with chatId. Adding USER to database with chatId: " + chatId);
             //добавляем пользователя в бд, если его нет
             String name = update.getMessage().getChat().getUserName();
@@ -147,11 +150,11 @@ public class TelegramBot extends TelegramLongPollingBot {
         //удаление статуса создания папки
         UserRepository.setCanAddFolder(chatId, 0);
         String selectedPath = UserRepository.getFilePath(chatId);
-        if(!selectedPath.isEmpty()) {
+        if (!selectedPath.isEmpty()) {
             Document document = update.getMessage().getDocument();
             System.out.println("Save file from user with chatId: " + chatId);
             saveFile(document, chatId, update.getMessage().getCaption(), selectedPath);
-        }else{
+        } else {
             SendMessage message = new SendMessage();
             try {
                 Messages.sendMessage(message, filesAndFolders.getFilesFromFolder(path), chatId, "Сначала выберите папку куда будете сохранять");
@@ -162,15 +165,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void hasText(Update update){
+    private void hasText(Update update) {
         System.out.println("User sends message with only text");
-        if(update.getMessage().getText().equals("/start")){
+        if (update.getMessage().getText().equals("/start")) {
             long chatId = update.getMessage().getChatId();
             String userName = update.getMessage().getChat().getUserName();
             String firstName = update.getMessage().getChat().getFirstName();
             String lastName = update.getMessage().getChat().getLastName();
             //проверка есть ли пользователь в бд
-            if(!UserRepository.getUser(chatId)){
+            if (!UserRepository.getUser(chatId)) {
                 //добавляем пользователя в бд, если его нет
                 UserRepository.addUser(chatId);
                 UserRepository.setUserName(chatId, userName);
@@ -184,11 +187,11 @@ public class TelegramBot extends TelegramLongPollingBot {
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
             }
-        }else if(update.getMessage().hasText()){
+        } else if (update.getMessage().hasText()) {
             long chatId = update.getMessage().getChatId();
             String text = update.getMessage().getText();
             //проверка есть ли пользователь в бд
-            if(!UserRepository.getUser(chatId)){
+            if (!UserRepository.getUser(chatId)) {
                 //добавляем пользователя в бд, если его нет
                 String name = update.getMessage().getChat().getUserName();
                 UserRepository.addUser(chatId);
@@ -196,7 +199,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 System.out.println("Adding user SUCCESSFUL. User's chatId is " + chatId);
             }
             boolean canAddFolder = UserRepository.getCanAddFolder(chatId);
-            if(canAddFolder){
+            if (canAddFolder) {
                 try {
                     sendNewMessageResponse(chatId, text);
                 } catch (TelegramApiException e) {
@@ -206,9 +209,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void saveFile(Document document, long chatId, String text, String selectedPath){
+    private void saveFile(Document document, long chatId, String text, String selectedPath) {
         try {
-            System.err.println("User with ");
+            System.err.println("User sends DOCUMENT. User id is " + chatId);
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
             //обращение к TelegramAPI для получения инфы о файле
@@ -219,10 +222,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             System.out.println(fileName + "filename");
             //получаем расширение файла
             String extension = fileName.substring(fileName.lastIndexOf("."));
-            if(text != null) {
+            if (text != null) {
                 System.out.println(1);
-                Files.copy(is, Paths.get(selectedPath + "\\" + text +  extension));
-            }else{
+                Files.copy(is, Paths.get(selectedPath + "\\" + text + extension));
+            } else {
                 System.out.println(2);
                 Files.copy(is, Paths.get(selectedPath + "\\" + fileName));
             }
@@ -234,11 +237,11 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void sendNewMessageResponse(long chatid, String data) throws TelegramApiException{
+    private void sendNewMessageResponse(long chatid, String data) throws TelegramApiException {
         //метод для ОТПРАВКИ сообщения
         SendMessage message = new SendMessage();
         message.setChatId((Long) chatid);
-        switch (data){
+        switch (data) {
             case "FileSaved":
                 Messages.sendMessage(message, chatid, "Файл сохранён");
                 execute(message);
@@ -279,7 +282,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
             case "TodayLessonsButtonPressed":
                 //проверка пользователя в бд
-                if(!UserRepository.getUser(chatId)){
+                if (!UserRepository.getUser(chatId)) {
                     UserRepository.addUser(chatId);
                     Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
                     execute(message);
@@ -287,13 +290,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 String obj = UserRepository.getObj(chatId);
                 //если юзер не выбрал группу, то просим его это сделать
-                if(obj.equals("Not found") || obj == null || obj.isEmpty()){
+                if (obj.equals("Not found") || obj == null || obj.isEmpty()) {
                     Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
                     execute(message);
                     return;
                 }
                 //пытаемся вернуть значение из кэша
-                if(lessonsCache.containsKey(obj) && !lessonsCache.get(obj).isExpired()){
+                if (lessonsCache.containsKey(obj) && !lessonsCache.get(obj).isExpired()) {
                     Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj).lessonsToday);
                     execute(message);
                     return;
@@ -305,7 +308,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
             case "TomorrowLessonsButtonPressed":
                 //проверка пользователя в бд
-                if(!UserRepository.getUser(chatId)){
+                if (!UserRepository.getUser(chatId)) {
                     UserRepository.addUser(chatId);
                     Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
                     execute(message);
@@ -313,13 +316,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 String obj1 = UserRepository.getObj(chatId);
                 //если юзер не выбрал группу, то просим его это сделать
-                if(obj1.equals("Not found") || obj1 == null || obj1.isEmpty()){
+                if (obj1.equals("Not found") || obj1 == null || obj1.isEmpty()) {
                     Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
                     execute(message);
                     return;
                 }
                 //пытаемся вернуть значение из кэша
-                if(lessonsCache.containsKey(obj1) && !lessonsCache.get(obj1).isExpired()){
+                if (lessonsCache.containsKey(obj1) && !lessonsCache.get(obj1).isExpired()) {
                     Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj1).lessonsTomorrow);
                     execute(message);
                     return;
@@ -344,7 +347,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
             case "selectYearButtonPressed":
                 System.out.println("User pressed selectYearButton. User's Id is: " + chatId);
-                if(!yearsAndGroupsCache.containsKey("Year")){
+                if (!yearsAndGroupsCache.containsKey("Year")) {
                     Messages.setSelectYearButtons();
                 }
                 Messages.editMessage(message, yearsAndGroupsCache.get("Year"), chatId, "Выберите курс");
@@ -352,21 +355,21 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
         }
         //если нажали на кнопку директории
-        if(data.contains("Folder")){
+        if (data.contains("Folder")) {
             //путь директории, Folder$ удаляет 1 вхождение с конца
             String path1 = data.replaceAll("Folder$", "");
             System.out.println(path1);
             Messages.editMessage(message, filesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
             execute(message);
-            if(UserRepository.getUser(chatId)){
+            if (UserRepository.getUser(chatId)) {
                 UserRepository.setFilePath(chatId, path1);
-            }else{
+            } else {
                 UserRepository.addUser(chatId);
                 UserRepository.setFilePath(chatId, path1);
                 return;
             }
             return;
-        }else if(data.contains("Year")){
+        } else if (data.contains("Year")) {
             int index = data.indexOf("Year");
             //получаем индекс начала Year
             String num = data.substring(index);
@@ -374,26 +377,26 @@ public class TelegramBot extends TelegramLongPollingBot {
             num = num.replace("Year", "");
             //удаляем не нужное
             int number = Integer.parseInt(num);
-            if(!yearsAndGroupsCache.containsKey("Group"+number)){
+            if (!yearsAndGroupsCache.containsKey("Group" + number)) {
                 //получаем группы и сохраняем в yearsAndGroupsCache
                 Messages.setGroupSelectButtons(number);
             }
             //получаем из кэша группы
-            Messages.editMessage(message, yearsAndGroupsCache.get("Groups"+number), chatId, "Выберите группу");
+            Messages.editMessage(message, yearsAndGroupsCache.get("Groups" + number), chatId, "Выберите группу");
             execute(message);
             return;
-        }else if(data.contains("Group")){
+        } else if (data.contains("Group")) {
             //получаем индекс начала Group
             int index = data.indexOf("Group");
             //получаем obj группы
             String group = data.substring(index);
             group = group.replace("Group=", "");
-            if(!UserRepository.getUser(chatId)){
+            if (!UserRepository.getUser(chatId)) {
                 UserRepository.addUser(chatId);
                 Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Ошибка! Напишите /start для продолжения");
                 execute(message);
-            }else{
-                if(!UserRepository.getUser(chatId)){
+            } else {
+                if (!UserRepository.getUser(chatId)) {
                     UserRepository.addUser(chatId);
                     Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите группу, чтобы получить расписание");
                     execute(message);
@@ -408,7 +411,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     //получение расписания на сегодня
     private boolean getLessons(String obj) throws IOException {
-        if(lessonsCache.containsKey(obj) && lessonsCache.get(obj).isExpired()){
+        if (lessonsCache.containsKey(obj) && lessonsCache.get(obj).isExpired()) {
             lessonsCache.remove(obj);
         }
         System.out.println("Get lessons for Obj = " + obj);
@@ -429,24 +432,24 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     @Override
-    public String getBotToken(){
+    public String getBotToken() {
         return bot_token;
     }
 
-    private static class CachedLessons{
+    private static class CachedLessons {
         String lessonsToday;
         String lessonsTomorrow;
         long timestamp;
         long duration;
 
-        public CachedLessons(String lessonsToday, String lessonsTomorrow, long duration){
+        public CachedLessons(String lessonsToday, String lessonsTomorrow, long duration) {
             this.timestamp = System.currentTimeMillis();
             this.lessonsTomorrow = lessonsTomorrow;
             this.lessonsToday = lessonsToday;
             this.duration = duration;
         }
 
-        public boolean isExpired(){
+        public boolean isExpired() {
             //текущее время - время создания > времени существования
             return System.currentTimeMillis() - timestamp > TimeUnit.MINUTES.toMillis(duration);
         }

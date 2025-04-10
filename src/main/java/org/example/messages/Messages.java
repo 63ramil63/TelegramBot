@@ -43,7 +43,7 @@ public class Messages {
         return deleteMessage;
     }
 
-    public static InlineKeyboardMarkup setLessonMenuButtons(){
+    public static InlineKeyboardMarkup setLessonMenuButtons() {
         InlineKeyboardButton today = setButton("На сегодня", "TodayLessonsButtonPressed");
         InlineKeyboardButton tomorrow = setButton("На завтра", "TomorrowLessonsButtonPressed");
         //создание кнопок и добавление к ним возвращаемого значения при нажатии
@@ -73,14 +73,14 @@ public class Messages {
         return markup;
     }
 
-    public static InlineKeyboardButton setButton(String text, String callBackData){
+    public static InlineKeyboardButton setButton(String text, String callBackData) {
         InlineKeyboardButton button = new InlineKeyboardButton();
         button.setText(text);
         button.setCallbackData(callBackData);
         return button;
     }
 
-    public static InlineKeyboardMarkup setMainMenuButtons(){
+    public static InlineKeyboardMarkup setMainMenuButtons() {
         List<InlineKeyboardButton> row = new ArrayList<>();
         //создание массива кнопок
         InlineKeyboardButton lessonButton = setButton("Расписание", "LessonButtonPressed");
@@ -126,7 +126,7 @@ public class Messages {
         System.out.println("setGroupButton");
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<String> groups = ParseSite.getGroups(i);
-        for(String group: groups){
+        for (String group : groups) {
             List<InlineKeyboardButton> row = new ArrayList<>();
             int index = group.indexOf("Group");
             //индекс, который указывает на obj

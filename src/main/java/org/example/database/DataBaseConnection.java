@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
+
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.example.Main;
@@ -19,12 +20,12 @@ public class DataBaseConnection {
         String PASS;
         String URL;
         //получаем переменные из файла конфигурации
-        try(FileInputStream fis = new FileInputStream(Main.propertyPath)){
+        try (FileInputStream fis = new FileInputStream(Main.propertyPath)) {
             properties.load(fis);
             URL = properties.getProperty("databaseURL");
             USER = properties.getProperty("user");
             PASS = properties.getProperty("pass");
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
@@ -35,8 +36,8 @@ public class DataBaseConnection {
         config.setMaximumPoolSize(20);
         dataSource = new HikariDataSource(config);
         //закрытие базы данных при выключении проекта
-        Runtime.getRuntime().addShutdownHook(new Thread (() -> {
-            if(dataSource != null){
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (dataSource != null) {
                 dataSource.close();
             }
         }));
