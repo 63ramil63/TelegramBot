@@ -154,7 +154,7 @@ public class UserRepository {
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, filePath);
-            preparedStatement.setLong(1, chatId);
+            preparedStatement.setLong(2, chatId);
             int rowsAffected = preparedStatement.executeUpdate();
             if (rowsAffected == 0) {
                 System.out.println("Не найдено пользователя с Id: " + chatId);

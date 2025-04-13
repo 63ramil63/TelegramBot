@@ -89,7 +89,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         long chatId = update.getCallbackQuery().getMessage().getChatId();
         //удаление статуса создания папки
         if (UserRepository.getUser(chatId) && UserRepository.getCanAddFolder(chatId)) {
-            UserRepository.setCanAddFolder(chatId, (byte) 1);
+            UserRepository.setCanAddFolder(chatId, (byte) 0);
         }
         String data = update.getCallbackQuery().getData();
         System.out.println("User pressed button. User's chatId: " + chatId + " | CallbackQuery is: " + data);
@@ -218,7 +218,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             //открываем поток для чтения
             InputStream is = new URL(fullFilePath).openStream();
             String fileName = document.getFileName();
-            System.out.println(fileName + "filename");
+            System.out.println(fileName + " - filename");
             //получаем расширение файла
             String extension = fileName.substring(fileName.lastIndexOf("."));
             if (text != null) {
@@ -228,6 +228,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 System.out.println(2);
                 Files.copy(is, Paths.get(selectedPath + "\\" + fileName));
             }
+            System.out.println(3);
             //копируем файл из потока в путь
             is.close();
             sendNewMessageResponse(chatId, "FileSaved");
@@ -249,7 +250,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 //отправка сообщения с кнопками
                 break;
             case "/start":
-                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Выберите функцию");
+                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Выберите функцию  ");
                 execute(message);
                 break;
             case "/error":
@@ -356,11 +357,13 @@ public class TelegramBot extends TelegramLongPollingBot {
             System.out.println(path1);
             Messages.editMessage(message, filesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
             execute(message);
+            //исправляем путь к директории
+            String correctPath = path + path1;
             if (UserRepository.getUser(chatId)) {
-                UserRepository.setFilePath(chatId, path1);
+                UserRepository.setFilePath(chatId, correctPath);
             } else {
                 UserRepository.addUser(chatId);
-                UserRepository.setFilePath(chatId, path1);
+                UserRepository.setFilePath(chatId, correctPath);
             }
         } else if (data.contains("Year")) {
             int index = data.indexOf("Year");
