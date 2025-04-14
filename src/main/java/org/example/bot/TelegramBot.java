@@ -93,14 +93,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
         String data = update.getCallbackQuery().getData();
         System.out.println("User pressed button. User's chatId: " + chatId + " | CallbackQuery is: " + data);
-        if (data.contains("Folder")) {
-            try {
-                long messageId = update.getCallbackQuery().getMessage().getMessageId();
-                sendEditMessageResponse(chatId, data, messageId);
-            } catch (IOException | TelegramApiException e) {
-                throw new RuntimeException(e);
-            }
-        } else if (data.equals("FileButtonPressed")) {
+        if (data.contains("Folder") || data.equals("FileButtonPressed")) {
             try {
                 long messageId = update.getCallbackQuery().getMessage().getMessageId();
                 sendEditMessageResponse(chatId, data, messageId);
@@ -110,8 +103,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         } else if (data.contains("File")) {
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
             try {
-                DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
                 //устанавливаем удаляемое сообщение
+                DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
                 execute(deleteMessage);
                 SendDocument sendDocument = new SendDocument();
                 filesAndFolders.sendMessageWithDocAsync(sendDocument, data, chatId);
@@ -250,7 +243,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 //отправка сообщения с кнопками
                 break;
             case "/start":
-                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Выберите функцию  ");
+                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Выберите функцию");
                 execute(message);
                 break;
             case "/error":
@@ -275,6 +268,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         EditMessageText message = new EditMessageText();
         message.setMessageId((int) messageID);
         switch (data) {
+            case "/help":
+                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Напишите /start, если что-то сломалось \n" +
+                        "Старайтесь не делать названия файлов и директории слишком большими, бот может дать сбой \n" +
+                        "Если столкнулись с проблемой, напишите в личку @wrotoftanks63");
+                execute(message);
+                return;
             case "LessonButtonPressed":
                 Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите дату");
                 execute(message);

@@ -19,14 +19,13 @@ public class UserRepository {
     }
 
     public static boolean getUser(long chatId) {
-        System.out.println("Get User");
+        System.out.println("Get User with Id: " + chatId);
         String sql = "select Name from users where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
             preparedStatement.setLong(1, chatId);
             ResultSet resultSet = preparedStatement.executeQuery();
-            System.out.println(resultSet);
             //проверяем есть ли запись
             if (resultSet.next()) {
                 return true;
@@ -35,7 +34,6 @@ public class UserRepository {
             System.out.println(e);
             throw new RuntimeException(e);
         }
-        System.out.println("return false");
         return false;
     }
 
@@ -118,7 +116,7 @@ public class UserRepository {
     }
 
     public static void addUser(long chatId) {
-        System.out.println("add user");
+        System.out.println("Add user with Id: " + chatId);
         String sql = "insert into users (Id) values (?)";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {

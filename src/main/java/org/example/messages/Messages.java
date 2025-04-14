@@ -91,6 +91,11 @@ public class Messages {
         //добавляем кнопку в массив кнопок
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         keyboard.add(row);
+
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        InlineKeyboardButton helpButton = setButton("Помощь", "/help");
+        row1.add(helpButton);
+        keyboard.add(row1);
         //клавиатура является массивом в массиве кнопок
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
