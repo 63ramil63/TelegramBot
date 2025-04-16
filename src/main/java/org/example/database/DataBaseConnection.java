@@ -11,11 +11,23 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.example.Main;
 
 public class DataBaseConnection {
+    //сам экземпляр объекты
+    private static DataBaseConnection dataBaseConnection;
+
+    //получаем экземпляр объекта
+    static {
+        try {
+            dataBaseConnection = new DataBaseConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static HikariDataSource dataSource;
     public String tableName;
 
     //используем singleton, чтобы быть уверенным что только один экземпляр класса будет создан
-    public DataBaseConnection() throws SQLException {
+    private DataBaseConnection() throws SQLException {
         Properties properties = new Properties();
         String USER;
         String PASS;
@@ -43,6 +55,10 @@ public class DataBaseConnection {
                 dataSource.close();
             }
         }));
+    }
+
+    public static DataBaseConnection getInstance() {
+        return dataBaseConnection;
     }
 
     public Connection getConnection() throws SQLException {

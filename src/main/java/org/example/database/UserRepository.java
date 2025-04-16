@@ -10,13 +10,8 @@ public class UserRepository {
     private static final String tableName;
     //инициализация подключения к бд
     static {
-        try {
-            dataBaseConnection = new DataBaseConnection();
-            tableName = dataBaseConnection.tableName;
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
+        dataBaseConnection = DataBaseConnection.getInstance();
+        tableName = dataBaseConnection.tableName;
     }
 
     public static boolean getUser(long chatId) {
