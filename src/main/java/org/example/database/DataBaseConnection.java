@@ -12,6 +12,7 @@ import org.example.Main;
 
 public class DataBaseConnection {
     private static HikariDataSource dataSource;
+    public String tableName;
 
     //используем singleton, чтобы быть уверенным что только один экземпляр класса будет создан
     public DataBaseConnection() throws SQLException {
@@ -25,6 +26,7 @@ public class DataBaseConnection {
             URL = properties.getProperty("databaseURL");
             USER = properties.getProperty("user");
             PASS = properties.getProperty("pass");
+            tableName = properties.getProperty("tableName");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

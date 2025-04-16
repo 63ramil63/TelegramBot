@@ -6,12 +6,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class UserRepository {
-    public static DataBaseConnection dataBaseConnection;
-
+    private static DataBaseConnection dataBaseConnection;
+    private static final String tableName;
     //инициализация подключения к бд
     static {
         try {
             dataBaseConnection = new DataBaseConnection();
+            tableName = dataBaseConnection.tableName;
         } catch (SQLException e) {
             System.out.println(e);
             throw new RuntimeException(e);
@@ -20,7 +21,7 @@ public class UserRepository {
 
     public static boolean getUser(long chatId) {
         System.out.println("Get User with Id: " + chatId);
-        String sql = "select Name from users where Id=?";
+        String sql = "select Name from " +  tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
@@ -38,7 +39,7 @@ public class UserRepository {
     }
 
     public static String getObj(long chatId) {
-        String sql = "select Obj from users where Id=?";
+        String sql = "select Obj from " + tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
@@ -59,7 +60,7 @@ public class UserRepository {
     }
 
     public static String getFilePath(long chatId) {
-        String sql = "select FilePath from users where Id=?";
+        String sql = "select FilePath from " + tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
@@ -79,7 +80,7 @@ public class UserRepository {
     }
 
     public static String getUserFullName(long chatId) {
-        String sql = "select FullName from users where Id=?";
+        String sql = "select FullName from " + tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setLong(1, chatId);
@@ -95,7 +96,7 @@ public class UserRepository {
     }
 
     public static boolean getCanAddFolder(long chatId) {
-        String sql = "select CanAddFolder from users where Id=?";
+        String sql = "select CanAddFolder from " + tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
@@ -117,7 +118,7 @@ public class UserRepository {
 
     public static void addUser(long chatId) {
         System.out.println("Add user with Id: " + chatId);
-        String sql = "insert into users (Id) values (?)";
+        String sql = "insert into " + tableName + " (Id) values (?)";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
@@ -132,7 +133,7 @@ public class UserRepository {
     }
 
     public static void setObj(long chatId, String obj) {
-        String sql = "update users set Obj=? where Id=?";
+        String sql = "update " + tableName + " set Obj=? where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, obj);
@@ -148,7 +149,7 @@ public class UserRepository {
     }
 
     public static void setFilePath(long chatId, String filePath) {
-        String sql = "update users set FilePath=? where Id=?";
+        String sql = "update " + tableName + " set FilePath=? where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, filePath);
@@ -164,7 +165,7 @@ public class UserRepository {
     }
 
     public static void setCanAddFolder(long chatId, byte bool) {
-        String sql = "update users set CanAddFolder = ? where Id =?";
+        String sql = "update " + tableName + " set CanAddFolder = ? where Id =?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //bool имеет значение 0 или 1
@@ -181,7 +182,7 @@ public class UserRepository {
     }
 
     public static void setUserFullName(long chatId, String fullName) {
-        String sql = "update users set FullName=? where Id=?";
+        String sql = "update " + tableName + " set FullName=? where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, fullName);
@@ -197,7 +198,7 @@ public class UserRepository {
     }
 
     public static void setUserName(long chatId, String userName) {
-        String sql = "update users set name=? where Id=?";
+        String sql = "update " + tableName + " set name=? where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, userName);
