@@ -6,12 +6,32 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class UserRepository {
-    private static DataBaseConnection dataBaseConnection;
+    private static final DataBaseConnection dataBaseConnection;
     private static final String tableName;
     //инициализация подключения к бд
     static {
         dataBaseConnection = DataBaseConnection.getInstance();
         tableName = dataBaseConnection.tableName;
+    }
+
+    //создаем таблицу, если таковой нет
+    public static void createTable() {
+        final String sql = "create table if not exists " + dataBaseConnection.tableName + " (" +
+                "Id int not null," +
+                "Name varchar(64) null," +
+                "FilePath varchar(100) null," +
+                "CanAddFolder tinyint default 0," +
+                "Obj varchar(4) null," +
+                "FullName varchar(64) null," +
+                "primary key (Id))";
+        try (Connection connection = dataBaseConnection.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.executeUpdate();
+            System.err.println("Created/found table " + tableName);
+        } catch (SQLException e) {
+            System.out.println("Failed to create table " + tableName + "\n" + e);
+            throw new RuntimeException(e);
+        }
     }
 
     public static boolean getUser(long chatId) {

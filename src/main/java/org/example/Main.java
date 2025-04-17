@@ -1,6 +1,7 @@
 package org.example;
 
 import org.example.bot.TelegramBot;
+import org.example.database.UserRepository;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
@@ -15,5 +16,7 @@ public class Main {
         propertyPath = args[0];
         TelegramBotsApi tgBot = new TelegramBotsApi(DefaultBotSession.class);
         tgBot.registerBot(new TelegramBot());
+        //создаем таблицу
+        UserRepository.createTable();
     }
 }

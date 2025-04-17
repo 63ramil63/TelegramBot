@@ -11,8 +11,11 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.example.Main;
 
 public class DataBaseConnection {
+    private static HikariDataSource dataSource;
+    public String tableName;
+
     //сам экземпляр объекты
-    private static DataBaseConnection dataBaseConnection;
+    private static final DataBaseConnection dataBaseConnection;
 
     //получаем экземпляр объекта
     static {
@@ -22,9 +25,6 @@ public class DataBaseConnection {
             throw new RuntimeException(e);
         }
     }
-
-    private static HikariDataSource dataSource;
-    public String tableName;
 
     //используем singleton, чтобы быть уверенным что только один экземпляр класса будет создан
     private DataBaseConnection() throws SQLException {
@@ -42,7 +42,6 @@ public class DataBaseConnection {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(URL);
         config.setUsername(USER);
