@@ -128,7 +128,6 @@ public class Messages {
     }
 
     public static void setGroupSelectButtons(int i) throws IOException {
-        System.out.println("setGroupButton");
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<String> groups = ParseSite.getGroups(i);
         for (String group : groups) {

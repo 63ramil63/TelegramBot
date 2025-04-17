@@ -215,13 +215,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             //получаем расширение файла
             String extension = fileName.substring(fileName.lastIndexOf("."));
             if (text != null) {
-                System.out.println(1);
                 Files.copy(is, Paths.get(selectedPath + "\\" + text + extension));
             } else {
-                System.out.println(2);
                 Files.copy(is, Paths.get(selectedPath + "\\" + fileName));
             }
-            System.out.println(3);
             //копируем файл из потока в путь
             is.close();
             sendNewMessageResponse(chatId, "FileSaved");
@@ -353,7 +350,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (data.contains("Folder")) {
             //путь директории, Folder$ удаляет 1 вхождение с конца
             String path1 = data.replaceAll("Folder$", "");
-            System.out.println(path1);
             Messages.editMessage(message, filesAndFolders.getFilesFromFolder(path1), chatId, "Выберите файл или загрузите его");
             execute(message);
             //исправляем путь к директории

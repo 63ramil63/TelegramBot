@@ -27,7 +27,7 @@ public class UserRepository {
         try (Connection connection = dataBaseConnection.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.executeUpdate();
-            System.err.println("Created/found table " + tableName);
+            System.out.println("Created/found table " + tableName);
         } catch (SQLException e) {
             System.out.println("Failed to create table " + tableName + "\n" + e);
             throw new RuntimeException(e);
@@ -35,7 +35,6 @@ public class UserRepository {
     }
 
     public static boolean getUser(long chatId) {
-        System.out.println("Get User with Id: " + chatId);
         String sql = "select Name from " +  tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -94,21 +93,21 @@ public class UserRepository {
         return "Not found";
     }
 
-    public static String getUserFullName(long chatId) {
-        String sql = "select FullName from " + tableName + " where Id=?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setLong(1, chatId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                return resultSet.getNString("FullName");
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
-        return "Not found";
-    }
+//    public static String getUserFullName(long chatId) {
+//        String sql = "select FullName from " + tableName + " where Id=?";
+//        try (Connection connection = dataBaseConnection.getConnection();
+//             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+//            preparedStatement.setLong(1, chatId);
+//            ResultSet resultSet = preparedStatement.executeQuery();
+//            if (resultSet.next()) {
+//                return resultSet.getNString("FullName");
+//            }
+//        } catch (SQLException e) {
+//            System.out.println(e);
+//            throw new RuntimeException(e);
+//        }
+//        return "Not found";
+//    }
 
     public static boolean getCanAddFolder(long chatId) {
         String sql = "select CanAddFolder from " + tableName + " where Id=?";
