@@ -58,15 +58,18 @@ public class ParseSite {
     public static String getLesson(int num) {
         num++;     //чтобы не выбирало ненужные поля
         Elements currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
-        String lessons = "";
+        //используем stringBuilder чтобы уменьшить потребление озу
+        StringBuilder lesson = new StringBuilder();
         while (!currentElement.text().isEmpty()) {      //проверка на последний элемент расписания(который всегда пустой)
             currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
             Elements _number = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(1)");
             Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
             Elements _lesson = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(4)");
             num++;
-            lessons += "\n" + _number.text() + ") " + _time.text() + " " + _lesson.text();
+            lesson.append("\n").append(_number.text()).append(") ").append(_time.text()).append(" ").append(_lesson.text());
         }
+        //переводим StringBuilder в String
+        String lessons = lesson.toString();
         //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
         lessons = lessons.replaceAll("\\s+$", "");
         lessons = lessons.substring(0, lessons.length() - 1);
