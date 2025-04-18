@@ -44,7 +44,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     public static String path;
     private FilesAndFolders filesAndFolders;
     //newCachedThreadPool - создает пул потоков, который может создавать новые потоки по мере необходимости, но при этом повторно использовать ранее созданные потоки, если они свободны
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     public TelegramBot() {
         loadConfig();
