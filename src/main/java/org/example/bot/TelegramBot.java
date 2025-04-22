@@ -43,6 +43,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private String duration;
     public static String path;
     private FilesAndFolders filesAndFolders;
+    public static String delimiter;
     //newCachedThreadPool - создает пул потоков, который может создавать новые потоки по мере необходимости, но при этом повторно использовать ранее созданные потоки, если они свободны
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
@@ -60,6 +61,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             bot_name = properties.getProperty("bot_name");
             duration = properties.getProperty("duration");
             path = properties.getProperty("path");
+            delimiter = properties.getProperty("delimiter");
         } catch (IOException e) {
             log.error("e: ", e);
         }
@@ -107,7 +109,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                 DeleteMessage deleteMessage = Messages.deleteMessage(chatId, messageId);
                 execute(deleteMessage);
                 SendDocument sendDocument = new SendDocument();
-                filesAndFolders.sendMessageWithDocAsync(sendDocument, data, chatId);
+                filesAndFolders.sendMessageWithDoc(sendDocument, data, chatId);
+                System.err.println(true);
                 execute(sendDocument);
                 sendNewMessageResponse(chatId, "/start");
             } catch (TelegramApiException e) {
@@ -215,9 +218,9 @@ public class TelegramBot extends TelegramLongPollingBot {
             //получаем расширение файла
             String extension = fileName.substring(fileName.lastIndexOf("."));
             if (text != null) {
-                Files.copy(is, Paths.get(selectedPath + "\\" + text + extension));
+                Files.copy(is, Paths.get(selectedPath + delimiter + text + extension));
             } else {
-                Files.copy(is, Paths.get(selectedPath + "\\" + fileName));
+                Files.copy(is, Paths.get(selectedPath + delimiter + fileName));
             }
             //копируем файл из потока в путь
             is.close();

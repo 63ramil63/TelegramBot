@@ -37,10 +37,12 @@ public class FilesAndFolders {
             for (Path path1: stream) {
                 List<InlineKeyboardButton> row = new ArrayList<>();
                 //удаление пути из названия файлов
-                String fileName = path1.toString().replace(path, "");
+                String fileName = path1.toString().replace(TelegramBot.path, "");
                 if (!Files.isDirectory(path1)) {
                     //удаление из названия лишней '\', добавляем File чтобы можно было определить что мы нажимаем именно на файл
-                    row.add(Messages.setButton(fileName.replace("\\", ""), fileName + "File"));
+                    int index = fileName.indexOf(TelegramBot.delimiter);
+                    String buttonName = fileName.substring(index).replace(TelegramBot.delimiter, "");
+                    row.add(Messages.setButton(buttonName, fileName + "File"));
                 } else {
                     //добавляем Folder, чтобы можно было определить, что это директория
                     row.add(Messages.setButton(fileName, fileName + "Folder"));
@@ -61,16 +63,12 @@ public class FilesAndFolders {
         return markup;
     }
 
-    public void sendMessageWithDocAsync(SendDocument message, String fileName, long chatId) {
-        executorService.submit(() -> sendMessageWithDoc(message, fileName, chatId));
-    }
-
     public void sendMessageWithDoc(SendDocument message, String fileName, long chatId) {
         System.out.println("Send document to user with chatID: " + chatId + "\n Document name is: " + fileName);
         //File$ - регулярное выражение которое удаляет одно вхождение с конца
         String correctFileName = fileName.replaceAll("File$", "");
         message.setChatId((Long) chatId);
-        message.setDocument(new InputFile(new File(correctFileName)));
+        message.setDocument(new InputFile(new File(TelegramBot.path + correctFileName)));
     }
 
     //асинхронное добавление файлов
