@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +42,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private String bot_token;
     private String bot_name;
     private String duration;
+    private List<String> allowedExtensions;
     public static String path;
     private FilesAndFolders filesAndFolders;
     public static String delimiter;
@@ -62,6 +64,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             duration = properties.getProperty("duration");
             path = properties.getProperty("path");
             delimiter = properties.getProperty("delimiter");
+            allowedExtensions = List.of(properties.getProperty("extensions").split(","));
         } catch (IOException e) {
             log.error("e: ", e);
         }
@@ -206,7 +209,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void saveFile(Document document, long chatId, String text, String selectedPath) {
         try {
-            System.err.println("User sends DOCUMENT. User id is " + chatId);
+            System.out.println("User sends DOCUMENT. User id is " + chatId);
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
             //обращение к TelegramAPI для получения инфы о файле
@@ -214,17 +217,22 @@ public class TelegramBot extends TelegramLongPollingBot {
             //открываем поток для чтения
             InputStream is = new URL(fullFilePath).openStream();
             String fileName = document.getFileName();
-            System.out.println(fileName + " - filename");
-            //получаем расширение файла
-            String extension = fileName.substring(fileName.lastIndexOf("."));
-            if (text != null) {
-                Files.copy(is, Paths.get(selectedPath + delimiter + text + extension));
-            } else {
-                Files.copy(is, Paths.get(selectedPath + delimiter + fileName));
+            System.out.println("User sends DOCUMENT. User id is " + chatId + " - filename is: " + fileName);
+            //получаем расширение файла(используем +1 чтобы получить расширение файла без точки)
+            String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
+            if (allowedExtensions.contains(extension)) {
+                if (text != null) {
+                    Files.copy(is, Paths.get(selectedPath + delimiter + text + extension));
+                } else {
+                    Files.copy(is, Paths.get(selectedPath + delimiter + fileName));
+                }
+                //копируем файл из потока в путь
+                is.close();
+                sendNewMessageResponse(chatId, "/fileSaved");
+            }else {
+                sendNewMessageResponse(chatId, "/extensionErr");
             }
-            //копируем файл из потока в путь
-            is.close();
-            sendNewMessageResponse(chatId, "FileSaved");
+
         } catch (TelegramApiException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -235,8 +243,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         SendMessage message = new SendMessage();
         message.setChatId((Long) chatid);
         switch (data) {
-            case "FileSaved":
+            case "/fileSaved":
                 Messages.sendMessage(message, chatid, "Файл сохранён");
+                execute(message);
+                //отправка сообщения без кнопки
+                sendNewMessageResponse(chatid, "/start");
+                //отправка сообщения с кнопками
+                break;
+            case "/extensionErr":
+                Messages.sendMessage(message, chatid, "Недопустимое расширение файла");
                 execute(message);
                 //отправка сообщения без кнопки
                 sendNewMessageResponse(chatid, "/start");
