@@ -34,6 +34,28 @@ public class UserRepository {
         }
     }
 
+    public static String getFilePath(long chatId) {
+        String sql = "select FilePath from " + tableName + " where Id=?";
+        try (Connection connection = dataBaseConnection.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            //устанавливаем значения для знаков ? в запросе sql
+            preparedStatement.setLong(1, chatId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                String result = resultSet.getNString("FilePath");
+                if (result != null) {
+                    resultSet.close();
+                    return result;
+                }
+            }
+            resultSet.close();
+        } catch (SQLException e) {
+            System.out.println(e);
+            throw new RuntimeException(e);
+        }
+        return "Not found";
+    }
+
     public static boolean getUser(long chatId) {
         String sql = "select Name from " +  tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
@@ -43,8 +65,10 @@ public class UserRepository {
             ResultSet resultSet = preparedStatement.executeQuery();
             //проверяем есть ли запись
             if (resultSet.next()) {
+                resultSet.close();
                 return true;
             }
+            resultSet.close();
         } catch (SQLException e) {
             System.out.println(e);
             throw new RuntimeException(e);
@@ -63,29 +87,11 @@ public class UserRepository {
                 String result = resultSet.getNString("Obj");
                 if (result != null) {
                     System.out.println("User with chatId:" + chatId + " got from database: obj=" + result);
+                    resultSet.close();
                     return result;
                 }
             }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
-        return "Not found";
-    }
-
-    public static String getFilePath(long chatId) {
-        String sql = "select FilePath from " + tableName + " where Id=?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setLong(1, chatId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                String result = resultSet.getNString("FilePath");
-                if (result != null) {
-                    return result;
-                }
-            }
+            resultSet.close();
         } catch (SQLException e) {
             System.out.println(e);
             throw new RuntimeException(e);
@@ -120,9 +126,11 @@ public class UserRepository {
                 int result = resultSet.getInt("CanAddFolder");
                 //если получаем 1, то возвращаем true, если же 0, то код вернет false в конце
                 if (result == 1) {
+                    resultSet.close();
                     return true;
                 }
             }
+            resultSet.close();
         } catch (SQLException e) {
             System.out.println(e);
             throw new RuntimeException(e);
