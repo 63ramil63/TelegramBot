@@ -44,6 +44,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private String duration;
     private List<String> allowedExtensions;
     public static String path;
+    public static int maxFileSize;
     private FilesAndFolders filesAndFolders;
     public static String delimiter;
     //newCachedThreadPool - создает пул потоков, который может создавать новые потоки по мере необходимости, но при этом повторно использовать ранее созданные потоки, если они свободны
@@ -65,6 +66,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             path = properties.getProperty("path");
             delimiter = properties.getProperty("delimiter");
             allowedExtensions = List.of(properties.getProperty("extensions").split(","));
+            maxFileSize = Integer.parseInt(properties.getProperty("fileMaxSize"));
         } catch (IOException e) {
             log.error("e: ", e);
         }
@@ -209,6 +211,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void saveFile(Document document, long chatId, String text, String selectedPath) {
         try {
+            if(document.getFileSize() > (long) maxFileSize * 1024 * 1024){
+                sendNewMessageResponse(chatId, "/fileTooLarge");
+                return;
+            }
             System.out.println("User sends DOCUMENT. User id is " + chatId);
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
@@ -232,7 +238,6 @@ public class TelegramBot extends TelegramLongPollingBot {
             }else {
                 sendNewMessageResponse(chatId, "/extensionErr");
             }
-
         } catch (TelegramApiException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -245,6 +250,13 @@ public class TelegramBot extends TelegramLongPollingBot {
         switch (data) {
             case "/fileSaved":
                 Messages.sendMessage(message, chatid, "Файл сохранён");
+                execute(message);
+                //отправка сообщения без кнопки
+                sendNewMessageResponse(chatid, "/start");
+                //отправка сообщения с кнопками
+                break;
+            case "/fileTooLarge":
+                Messages.sendMessage(message, chatid, "Файл слишком большой");
                 execute(message);
                 //отправка сообщения без кнопки
                 sendNewMessageResponse(chatid, "/start");
