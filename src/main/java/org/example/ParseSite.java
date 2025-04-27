@@ -10,57 +10,94 @@ import java.util.List;
 
 
 public class ParseSite {
-    private static Document doc;
     public static String url = "https://lk.ks.psuti.ru/?mn=2&obj=";
 
-    public static String getDay(String _day, String obj) throws IOException {
-        System.out.println("Parsing site for obj = " + obj);
-        doc = Jsoup.connect(url + obj).userAgent("Chrome").get();
-        int num = 1;
-        while (num < 60) {
-            //перебор эл сайта до нахождения нужной даты
-            if (match(_day, num, doc)) {
-                //проверка на совпадение дат
-                num++;
-                String lessons = getLesson(num, doc);
-                return _day + lessons;
-            }
-            num++;
-        }
-        Elements week = doc.select("body > table:nth-child(4) > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(8) > a");
+    /**
+     *
+     * @param doc doc connected to the site
+     * @return string(attribute) of the next week
+     */
+    private static String getWK(Document doc) {
         //получаем неделю
+        Elements week = doc.select("body > table:nth-child(4) > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(8) > a");
         String wk = week.attr("href");
         int index = wk.indexOf("wk");
         //удаляем ненужное
         wk = wk.substring(index);
-        num = 1;
-        //получаем расписание, которое располагается на след неделе при помощи атрибута wk
-        Document newDoc = Jsoup.connect(url + obj + "&" + wk).userAgent("Chrome").get();
+        return wk;
+    }
+
+    /**
+     *
+     * @param _day string of date
+     * @param doc doc connected to the site
+     * @return string of lessons
+     */
+    public static String findDay(String _day, Document doc) {
+        //переменная для перебора элементов с расписанием на странице
+        int num = 1;
+        //перебор эл сайта до нахождения нужной даты
         while (num < 60) {
-            //перебор эл сайта до нахождения нужной даты
-            if (match(_day, num, newDoc)) {
+            //проверка на совпадение дат
+            if (match(_day, num, doc)) {
                 num++;
-                String lessons = getLesson(num, newDoc);
-                return _day + lessons;
+                return _day + getLesson(num, doc);
             }
             num++;
         }
-        return "ошибка \n https://lk.ks.psuti.ru/?mn=2&obj=" + obj;
+        return "Not found";
     }
 
+    /**
+     *
+     * @param _day string of date
+     * @param num number of element of site
+     * @param doc doc connected to site
+     * @return true if text of elements on site contains string _day
+     */
     public static boolean match(String _day, int num, Document doc) {
         //перебор эл сайта до нахождения нужной даты
         Elements day = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
         return day.text().contains(_day);
     }
 
+    public static String getDay(String _day, String obj) throws IOException {
+        System.out.println("Parsing site for obj = " + obj);
+        Document doc = Jsoup.connect(url + obj).userAgent("Chrome").get();
 
+        //получаем расписание на эту неделю
+        String lessons = findDay(_day, doc);
+        if(!lessons.equals("Not found")) {
+            return lessons;
+        }
+
+        //получаем страницу сайта с расписанием, которое располагается на след неделе при помощи атрибута wk
+        String wk = getWK(doc);
+        doc = Jsoup.connect(url + obj + "&" + wk).userAgent("Chrome").get();
+
+        //получаем расписание на след неделю
+        lessons = findDay(_day, doc);
+        if(!lessons.equals("Not found")){
+            return lessons;
+        }
+        return "Нет расписания на нужную дату \n https://lk.ks.psuti.ru/?mn=2&obj=" + obj;
+    }
+
+    /**
+     *
+     * @param num number of element where lessons start
+     * @param doc doc connected to site
+     * @return lessons
+     */
     public static String getLesson(int num, Document doc) {
-        num++;     //чтобы не выбирало ненужные поля
+        //пропуск ненужного поля
+        num++;
         Elements currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
-        //используем stringBuilder чтобы уменьшить потребление озу
+        //используем stringBuilder, чтобы уменьшить потребление озу
         StringBuilder lesson = new StringBuilder();
-        while (!currentElement.text().isEmpty()) {      //проверка на последний элемент расписания(который всегда пустой)
+
+        //проверка на последний элемент расписания на день, который всегда пустой
+        while (!currentElement.text().isEmpty()) {
             currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
             Elements _number = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(1)");
             Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
@@ -68,6 +105,7 @@ public class ParseSite {
             num++;
             lesson.append("\n").append(_number.text()).append(") ").append(_time.text()).append(" ").append(_lesson.text());
         }
+
         //переводим StringBuilder в String
         String lessons = lesson.toString();
         //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
@@ -78,7 +116,10 @@ public class ParseSite {
         return lessons;
     }
 
-
+    /**
+     *
+     * @return List of String with years of study from site
+     */
     public static List<String> getYear() throws IOException {
         Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").get();
         List<String> years = new ArrayList<>();
@@ -94,23 +135,37 @@ public class ParseSite {
         return years;
     }
 
+    /**
+     * writes group info in List of String
+     * @param elements element from which the group is taken
+     * @param groups List of String in which method write group
+     * @param i index of element in elements
+     */
+    private static void getGroupElement(Elements elements, List<String> groups, int i) {
+        Elements element = elements.select("tr:nth-child(" + i + ")");
+        //получаем строку в столбце
+        Elements obj = element.select("td > a");
+        //получаем <a> с атрибутом href
+        String attribute = obj.attr("href");
+        //получаем значение из атрибута <a>
+        int index = attribute.indexOf("obj");
+        attribute = attribute.substring(index);
+        attribute = attribute.replace("obj", "");
+        //удаляем ненужное, остается только obj
+        groups.add(element.text() + "Group" + attribute);
+    }
+
+    /**
+     *
+     * @param num element number that indicates the year of study
+     * @return List of String with groups in the selected year of study
+     */
     public static List<String> getGroups(int num) throws IOException {
         Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").get();
         List<String> groups = new ArrayList<>();
         Elements elementsSize = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(7) > td:nth-child(" + num + ") > table > tbody > tr:nth-child(1) > td > table > tbody > tr");
         for (int i = 1; i < elementsSize.size() + 1; i++) {
-            Elements element = elementsSize.select("tr:nth-child(" + i + ")");
-            //получаем строку в столбце
-            Elements obj = element.select("td > a");
-            //получаем <a> с атрибутом href
-            String attribute = obj.attr("href");
-            //получаем значение из атрибута <a>
-            int index = attribute.indexOf("obj");
-            attribute = attribute.substring(index);
-            attribute = attribute.replace("obj", "");
-            //удаляем ненужное, остается только obj
-            groups.add(element.text() + "Group" + attribute);
-            //
+            getGroupElement(elementsSize, groups, i);
         }
         return groups;
     }
