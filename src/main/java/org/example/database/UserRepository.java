@@ -8,6 +8,7 @@ import java.sql.SQLException;
 public class UserRepository {
     private static final DataBaseConnection dataBaseConnection;
     private static final String tableName;
+
     //инициализация подключения к бд
     static {
         dataBaseConnection = DataBaseConnection.getInstance();
@@ -34,15 +35,14 @@ public class UserRepository {
         }
     }
 
-    public static String getFilePath(long chatId) {
-        String sql = "select FilePath from " + tableName + " where Id=?";
+    private static String executeSQLQuery(String sql, long chatId) {
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
             preparedStatement.setLong(1, chatId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
-                String result = resultSet.getNString("FilePath");
+                String result = resultSet.getNString(1);
                 if (result != null) {
                     resultSet.close();
                     return result;
@@ -54,6 +54,11 @@ public class UserRepository {
             throw new RuntimeException(e);
         }
         return "Not found";
+    }
+
+    public static String getFilePath(long chatId) {
+        String sql = "select FilePath from " + tableName + " where Id=?";
+        return executeSQLQuery(sql, chatId);
     }
 
     public static boolean getUser(long chatId) {
@@ -78,25 +83,7 @@ public class UserRepository {
 
     public static String getObj(long chatId) {
         String sql = "select Obj from " + tableName + " where Id=?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setLong(1, chatId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                String result = resultSet.getNString("Obj");
-                if (result != null) {
-                    System.out.println("User with chatId:" + chatId + " got from database: obj=" + result);
-                    resultSet.close();
-                    return result;
-                }
-            }
-            resultSet.close();
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
-        return "Not found";
+        return executeSQLQuery(sql, chatId);
     }
 
 //    public static String getUserFullName(long chatId) {
@@ -138,9 +125,37 @@ public class UserRepository {
         return false;
     }
 
-    public static void addUser(long chatId) {
-        System.out.println("Add user with Id: " + chatId);
-        String sql = "insert into " + tableName + " (Id) values (?)";
+    private static void executeSQLUpdate(String sql ,long chatId, String value) {
+        try (Connection connection = dataBaseConnection.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, value);
+            preparedStatement.setLong(2, chatId);
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Не найдено пользователя с Id: " + chatId);
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void executeSQLUpdate(String sql ,long chatId, byte value) {
+        try (Connection connection = dataBaseConnection.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setByte(1, value);
+            preparedStatement.setLong(2, chatId);
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Не найдено пользователя с Id: " + chatId);
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void executeSQLUpdate(String sql, long chatId) {
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
@@ -154,84 +169,34 @@ public class UserRepository {
         }
     }
 
+    public static void addUser(long chatId) {
+        System.out.println("Add user with Id: " + chatId);
+        String sql = "insert into " + tableName + " (Id) values (?)";
+        executeSQLUpdate(sql, chatId);
+    }
+
     public static void setObj(long chatId, String obj) {
         String sql = "update " + tableName + " set Obj=? where Id=?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, obj);
-            preparedStatement.setLong(2, chatId);
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователя с Id: " + chatId);
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
+        executeSQLUpdate(sql, chatId, obj);
     }
 
     public static void setFilePath(long chatId, String filePath) {
         String sql = "update " + tableName + " set FilePath=? where Id=?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, filePath);
-            preparedStatement.setLong(2, chatId);
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователя с Id: " + chatId);
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
+        executeSQLUpdate(sql, chatId, filePath);
     }
 
     public static void setCanAddFolder(long chatId, byte bool) {
         String sql = "update " + tableName + " set CanAddFolder = ? where Id =?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            //bool имеет значение 0 или 1
-            preparedStatement.setByte(1, bool);
-            preparedStatement.setString(2, String.valueOf(chatId));
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователей с Id: " + chatId);
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
+        executeSQLUpdate(sql, chatId, bool);
     }
 
     public static void setUserFullName(long chatId, String fullName) {
         String sql = "update " + tableName + " set FullName=? where Id=?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, fullName);
-            preparedStatement.setLong(2, chatId);
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователя с Id: " + chatId);
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
+        executeSQLUpdate(sql, chatId, fullName);
     }
 
     public static void setUserName(long chatId, String userName) {
         String sql = "update " + tableName + " set name=? where Id=?";
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, userName);
-            preparedStatement.setString(2, String.valueOf(chatId));
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователей с Id: " + chatId);
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
+        executeSQLUpdate(sql, chatId, userName);
     }
 }
