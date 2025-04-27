@@ -22,7 +22,7 @@ public class ParseSite {
             if (match(_day, num, doc)) {
                 //проверка на совпадение дат
                 num++;
-                String lessons = getLesson(num);
+                String lessons = getLesson(num, doc);
                 return _day + lessons;
             }
             num++;
@@ -40,7 +40,7 @@ public class ParseSite {
             //перебор эл сайта до нахождения нужной даты
             if (match(_day, num, newDoc)) {
                 num++;
-                String lessons = getLesson(num);
+                String lessons = getLesson(num, newDoc);
                 return _day + lessons;
             }
             num++;
@@ -55,7 +55,7 @@ public class ParseSite {
     }
 
 
-    public static String getLesson(int num) {
+    public static String getLesson(int num, Document doc) {
         num++;     //чтобы не выбирало ненужные поля
         Elements currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
         //используем stringBuilder чтобы уменьшить потребление озу
