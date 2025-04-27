@@ -209,19 +209,23 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.getMessage().getText().equals("/start")) {
             getMessageStart(update);
         } else if (update.getMessage().hasText()) {
+            System.out.println("another");
             getMessageWithAnyText(update);
         }
     }
 
     private void getMessageStart(Update update){
+        System.out.println("getMessageStart");
         //получаем инфу о пользователе
         long chatId = update.getMessage().getChatId();
-        String userName = update.getMessage().getChat().getUserName();
-        String firstName = update.getMessage().getChat().getFirstName();
-        String lastName = update.getMessage().getChat().getLastName();
+
 
         //проверка есть ли пользователь в бд
         if (!UserRepository.getUser(chatId)) {
+            String userName = update.getMessage().getChat().getUserName();
+            String firstName = update.getMessage().getChat().getFirstName();
+            String lastName = update.getMessage().getChat().getLastName();
+
             //добавляем пользователя в бд, если его нет
             UserRepository.addUser(chatId);
             UserRepository.setUserName(chatId, userName);
@@ -231,8 +235,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         //присылаем ответ пользователю
         try {
-            UserRepository.setUserName(chatId, userName);
-            UserRepository.setUserFullName(chatId, firstName + " " + lastName);
             sendNewMessageResponse(chatId, "/start");
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);

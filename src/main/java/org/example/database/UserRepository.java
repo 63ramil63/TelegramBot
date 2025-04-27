@@ -18,7 +18,7 @@ public class UserRepository {
     //создаем таблицу, если таковой нет
     public static void createTable() {
         final String sql = "create table if not exists " + dataBaseConnection.tableName + " (" +
-                "Id int not null," +
+                "Id bigint not null," +
                 "Name varchar(64) null," +
                 "FilePath varchar(100) null," +
                 "CanAddFolder tinyint default 0," +
@@ -165,6 +165,7 @@ public class UserRepository {
                 System.out.println("Не найдено пользователя с Id: " + chatId);
             }
         } catch (SQLException e) {
+            System.out.println(e);
             throw new RuntimeException(e);
         }
     }
