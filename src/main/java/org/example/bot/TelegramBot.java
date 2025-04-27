@@ -380,6 +380,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         switch (data) {
             case "/help":
                 Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Напишите /start, если что-то сломалось \n" +
+                        "Чтобы сохранить файл, выберите путь и скиньте файл боту" +
                         "Старайтесь не делать названия файлов и директории слишком большими, бот может дать сбой \n" +
                         "Если столкнулись с проблемой, напишите в личку @wrotoftanks63");
                 execute(message);
