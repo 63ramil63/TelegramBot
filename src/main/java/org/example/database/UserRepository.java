@@ -26,7 +26,7 @@ public class UserRepository {
                 "FullName varchar(64) null," +
                 "primary key (Id))";
         try (Connection connection = dataBaseConnection.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.executeUpdate();
             System.out.println("Created/found table " + tableName);
         } catch (SQLException e) {
@@ -125,44 +125,22 @@ public class UserRepository {
         return false;
     }
 
-    private static void executeSQLUpdate(String sql ,long chatId, String value) {
+    /**
+     *
+     * @param sql sql query
+     * @param params takes params for sql query. Give params in right order in your sql query
+     */
+    private static void executeSQLUpdate(String sql, Object ... params) {
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, value);
-            preparedStatement.setLong(2, chatId);
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователя с Id: " + chatId);
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void executeSQLUpdate(String sql ,long chatId, byte value) {
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setByte(1, value);
-            preparedStatement.setLong(2, chatId);
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователя с Id: " + chatId);
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void executeSQLUpdate(String sql, long chatId) {
-        try (Connection connection = dataBaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            //устанавливаем значения для знаков ? в запросе sql
-            preparedStatement.setLong(1, chatId);
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                System.out.println("Не найдено пользователя с Id: " + chatId);
+            for (int i = 0; i < params.length; i++) {
+                if (params[i] instanceof Long) {
+                    preparedStatement.setLong(i + 1, (Long) params[i]);
+                } else if (params[i] instanceof String) {
+                    preparedStatement.setString(i + 1, (String) params[i]);
+                } else if (params[i] instanceof Byte) {
+                    preparedStatement.setByte(i + 1,(byte) params[i]);
+                }
             }
         } catch (SQLException e) {
             System.out.println(e);
@@ -178,26 +156,26 @@ public class UserRepository {
 
     public static void setObj(long chatId, String obj) {
         String sql = "update " + tableName + " set Obj=? where Id=?";
-        executeSQLUpdate(sql, chatId, obj);
+        executeSQLUpdate(sql, obj, chatId);
     }
 
     public static void setFilePath(long chatId, String filePath) {
         String sql = "update " + tableName + " set FilePath=? where Id=?";
-        executeSQLUpdate(sql, chatId, filePath);
+        executeSQLUpdate(sql, filePath, chatId);
     }
 
     public static void setCanAddFolder(long chatId, byte bool) {
         String sql = "update " + tableName + " set CanAddFolder = ? where Id =?";
-        executeSQLUpdate(sql, chatId, bool);
+        executeSQLUpdate(sql, bool, chatId);
     }
 
     public static void setUserFullName(long chatId, String fullName) {
         String sql = "update " + tableName + " set FullName=? where Id=?";
-        executeSQLUpdate(sql, chatId, fullName);
+        executeSQLUpdate(sql, fullName, chatId);
     }
 
     public static void setUserName(long chatId, String userName) {
         String sql = "update " + tableName + " set name=? where Id=?";
-        executeSQLUpdate(sql, chatId, userName);
+        executeSQLUpdate(sql, userName, chatId);
     }
 }

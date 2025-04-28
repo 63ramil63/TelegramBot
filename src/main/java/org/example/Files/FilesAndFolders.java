@@ -82,6 +82,7 @@ public class FilesAndFolders {
             markup.setKeyboard(keyboard);
         } catch (IOException e) {
             System.out.println(e);
+            throw new RuntimeException(e);
         }
         return markup;
     }

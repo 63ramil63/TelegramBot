@@ -63,7 +63,7 @@ public class ParseSite {
 
     public static String getDay(String _day, String obj) throws IOException {
         System.out.println("Parsing site for obj = " + obj);
-        Document doc = Jsoup.connect(url + obj).userAgent("Chrome").get();
+        Document doc = Jsoup.connect(url + obj).userAgent("Chrome").timeout(10_000).get();
 
         //получаем расписание на эту неделю
         String lessons = findDay(_day, doc);
@@ -73,7 +73,7 @@ public class ParseSite {
 
         //получаем страницу сайта с расписанием, которое располагается на след неделе при помощи атрибута wk
         String wk = getWK(doc);
-        doc = Jsoup.connect(url + obj + "&" + wk).userAgent("Chrome").get();
+        doc = Jsoup.connect(url + obj + "&" + wk).userAgent("Chrome").timeout(10_000).get();
 
         //получаем расписание на след неделю
         lessons = findDay(_day, doc);
@@ -121,7 +121,7 @@ public class ParseSite {
      * @return List of String with years of study from site
      */
     public static List<String> getYear() throws IOException {
-        Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").get();
+        Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").timeout(10_000).get();
         List<String> years = new ArrayList<>();
         int i = 1;
         while (i != 11) {
@@ -161,7 +161,7 @@ public class ParseSite {
      * @return List of String with groups in the selected year of study
      */
     public static List<String> getGroups(int num) throws IOException {
-        Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").get();
+        Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").timeout(10_000).get();
         List<String> groups = new ArrayList<>();
         Elements elementsSize = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(7) > td:nth-child(" + num + ") > table > tbody > tr:nth-child(1) > td > table > tbody > tr");
         for (int i = 1; i < elementsSize.size() + 1; i++) {

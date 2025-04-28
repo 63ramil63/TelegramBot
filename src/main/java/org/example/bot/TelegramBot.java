@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
@@ -41,7 +42,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private String bot_token;
     private String bot_name;
-    private String duration;
+    private int duration;
     private List<String> allowedExtensions;
     public static String path;
     public static int maxFileSize;
@@ -63,7 +64,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             bot_token = properties.getProperty("bot_token");
             bot_name = properties.getProperty("bot_name");
             //время обновления расписания в минутах
-            duration = properties.getProperty("duration");
+            duration = Integer.parseInt(properties.getProperty("duration"));
             //путь, где хранятся файлы
             path = properties.getProperty("path");
             //указываем разделитель '\\ для win' | '/ для Linux'
@@ -75,7 +76,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         } catch (IOException e) {
             System.out.println(e);
         }
+        //закрытие потоков при выключении программы
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::close));
+
+        //запуск очистки расписания если оно устарело
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(this::clearExpiredCache, duration, duration, TimeUnit.MINUTES);
     }
 
     @Override
@@ -291,11 +297,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 } else {
                     Files.copy(is, Paths.get(selectedPath + delimiter + fileName));
                 }
-                is.close();
                 sendNewMessageResponse(chatId, "/fileSaved");
             }else {
                 sendNewMessageResponse(chatId, "/extensionErr");
             }
+            is.close();
         } catch (TelegramApiException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -518,7 +524,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         String lessonsTomorrow = ParseSite.getDay(tomorrow, obj);
 
         //устанавливаем значения для lessonsCache
-        lessonsCache.put(obj, new CachedLessons(lessonsToday, lessonsTomorrow, Long.parseLong(duration)));
+        lessonsCache.put(obj, new CachedLessons(lessonsToday, lessonsTomorrow, duration));
         System.out.println("Lessons saved in cache to Obj = " + obj);
         return true;
     }
@@ -533,13 +539,17 @@ public class TelegramBot extends TelegramLongPollingBot {
         return bot_token;
     }
 
+    public void clearExpiredCache () {
+        lessonsCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+
     private static class CachedLessons {
         String lessonsToday;
         String lessonsTomorrow;
         long timestamp;
-        long duration;
+        int duration;
 
-        public CachedLessons(String lessonsToday, String lessonsTomorrow, long duration) {
+        public CachedLessons(String lessonsToday, String lessonsTomorrow, int duration) {
             this.timestamp = System.currentTimeMillis();
             this.lessonsTomorrow = lessonsTomorrow;
             this.lessonsToday = lessonsToday;
