@@ -142,6 +142,10 @@ public class UserRepository {
                     preparedStatement.setByte(i + 1,(byte) params[i]);
                 }
             }
+            int rowsAffected = preparedStatement.executeUpdate();
+            if (rowsAffected == 0) {
+                System.out.println("Ошибка на строке 147 UserRepository");
+            }
         } catch (SQLException e) {
             System.out.println(e);
             throw new RuntimeException(e);

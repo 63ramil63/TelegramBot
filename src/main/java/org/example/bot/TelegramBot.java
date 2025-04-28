@@ -215,7 +215,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.getMessage().getText().equals("/start")) {
             getMessageStart(update);
         } else if (update.getMessage().hasText()) {
-            System.out.println("another");
             getMessageWithAnyText(update);
         }
     }
