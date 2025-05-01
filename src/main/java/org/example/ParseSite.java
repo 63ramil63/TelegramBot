@@ -69,6 +69,7 @@ public class ParseSite {
         String lessons = findDay(_day, doc);
         if(!lessons.equals("Not found")) {
             doc.clearAttributes();
+            doc = null;
             return lessons;
         }
 
@@ -80,9 +81,11 @@ public class ParseSite {
         lessons = findDay(_day, doc);
         if(!lessons.equals("Not found")){
             doc.clearAttributes();
+            doc = null;
             return lessons;
         }
         doc.clearAttributes();
+        doc = null;
         return "Нет расписания на нужную дату \n https://lk.ks.psuti.ru/?mn=2&obj=" + obj;
     }
 
@@ -135,6 +138,7 @@ public class ParseSite {
             i++;
         }
         doc.clearAttributes();
+        doc = null;
         //получаем курсы и помещаем их в массив
         return years;
     }
@@ -172,6 +176,7 @@ public class ParseSite {
             getGroupElement(elementsSize, groups, i);
         }
         doc.clearAttributes();
+        doc = null;
         return groups;
     }
 }
