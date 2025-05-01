@@ -86,22 +86,6 @@ public class UserRepository {
         return executeSQLQuery(sql, chatId);
     }
 
-//    public static String getUserFullName(long chatId) {
-//        String sql = "select FullName from " + tableName + " where Id=?";
-//        try (Connection connection = dataBaseConnection.getConnection();
-//             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-//            preparedStatement.setLong(1, chatId);
-//            ResultSet resultSet = preparedStatement.executeQuery();
-//            if (resultSet.next()) {
-//                return resultSet.getNString("FullName");
-//            }
-//        } catch (SQLException e) {
-//            System.out.println(e);
-//            throw new RuntimeException(e);
-//        }
-//        return "Not found";
-//    }
-
     public static boolean getCanAddFolder(long chatId) {
         String sql = "select CanAddFolder from " + tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();

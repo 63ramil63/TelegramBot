@@ -78,9 +78,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::close));
 
         //запуск очистки расписания если оно устарело
-        try (ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1)) {
-            scheduler.scheduleAtFixedRate(this::clearExpiredCache, duration, duration, TimeUnit.MINUTES);
-        }
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        System.out.println("scheduler is " + scheduler.isShutdown());
+        scheduler.scheduleAtFixedRate(this::clearExpiredCache, duration, duration, TimeUnit.MINUTES);
+
     }
 
     @Override

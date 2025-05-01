@@ -142,11 +142,9 @@ public class Messages {
         }
         switch (key) {
             case MarkupKey.LessonMenu:
-                System.out.println("Put in cache LessonMenu");
                 setLessonMenuButtons();
                 break;
             case MarkupKey.MainMenu:
-                System.out.println("Put in cache MainMenu");
                 setMainMenuButtons();
                 break;
         }
@@ -186,7 +184,6 @@ public class Messages {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
         //сохраняем значение в HashMap
-        System.out.println("Put selectYearButtons into cache");
         TelegramBot.yearsAndGroupsCache.put("Year", markup);
     }
 
@@ -205,7 +202,6 @@ public class Messages {
         keyboard.add(row);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
-        System.out.println("Put selectGroupButtons into cache");
         TelegramBot.yearsAndGroupsCache.put("Group" + i, markup);
     }
 }
