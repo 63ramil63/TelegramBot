@@ -68,6 +68,7 @@ public class ParseSite {
         //получаем расписание на эту неделю
         String lessons = findDay(_day, doc);
         if(!lessons.equals("Not found")) {
+            doc.clearAttributes();
             return lessons;
         }
 
@@ -78,8 +79,10 @@ public class ParseSite {
         //получаем расписание на след неделю
         lessons = findDay(_day, doc);
         if(!lessons.equals("Not found")){
+            doc.clearAttributes();
             return lessons;
         }
+        doc.clearAttributes();
         return "Нет расписания на нужную дату \n https://lk.ks.psuti.ru/?mn=2&obj=" + obj;
     }
 
@@ -103,16 +106,16 @@ public class ParseSite {
             Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
             Elements _lesson = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(4)");
             num++;
-            lesson.append("\n").append(_number.text()).append(") ").append(_time.text()).append(" ").append(_lesson.text());
+            lesson.append("\n").append(_number.text().intern()).append(") ").append(_time.text().intern()).append(" ").append(_lesson.text().intern());
         }
 
         //переводим StringBuilder в String
         String lessons = lesson.toString();
         //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
-        lessons = lessons.replaceAll("\\s+$", "");
-        lessons = lessons.substring(0, lessons.length() - 1);
-        lessons = lessons.replaceAll("Московское шоссе, 120", "");
-        lessons = lessons.replaceAll(" Замена Свободное время на:", "");
+        lessons = lessons.replaceAll("\\s+$", "").intern();
+        lessons = lessons.substring(0, lessons.length() - 1).intern();
+        lessons = lessons.replaceAll("Московское шоссе, 120", "").intern();
+        lessons = lessons.replaceAll(" Замена Свободное время на:", "").intern();
         return lessons;
     }
 
@@ -131,6 +134,7 @@ public class ParseSite {
             }
             i++;
         }
+        doc.clearAttributes();
         //получаем курсы и помещаем их в массив
         return years;
     }
@@ -167,6 +171,7 @@ public class ParseSite {
         for (int i = 1; i < elementsSize.size() + 1; i++) {
             getGroupElement(elementsSize, groups, i);
         }
+        doc.clearAttributes();
         return groups;
     }
 }

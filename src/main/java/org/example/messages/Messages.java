@@ -2,6 +2,7 @@ package org.example.messages;
 
 import org.example.ParseSite;
 import org.example.bot.TelegramBot;
+import org.example.enums.MarkupKey;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -12,9 +13,13 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class Messages {
+
+    private static final HashMap<MarkupKey, InlineKeyboardMarkup> markupCache = new HashMap<>();
+
     /**
      * setting new message
      * @param message SendMessage
@@ -82,12 +87,13 @@ public class Messages {
      */
     public static InlineKeyboardButton setButton(String text, String callBackData) {
         InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(text);
-        button.setCallbackData(callBackData);
+        button.setText(text.intern());
+        button.setCallbackData(callBackData.intern());
         return button;
     }
 
-    public static InlineKeyboardMarkup setLessonMenuButtons() {
+
+    private static void setLessonMenuButtons() {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
         //создание кнопок и добавление к ним возвращаемого значения при нажатии
@@ -105,10 +111,10 @@ public class Messages {
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
-        return markup;
+        markupCache.put(MarkupKey.LessonMenu, markup);
     }
 
-    public static InlineKeyboardMarkup setMainMenuButtons() {
+    private static void setMainMenuButtons() {
         //создание кнопки и установка текста и возвращаемого значения при нажатии
         InlineKeyboardButton lessonButton = setButton("Расписание", "LessonButtonPressed");
         InlineKeyboardButton fileButton = setButton("Файлы", "FileButtonPressed");
@@ -123,7 +129,28 @@ public class Messages {
         //создание самого объекта клавиатуры, к которому все добавляем
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
-        return markup;
+        markupCache.put(MarkupKey.MainMenu, markup);
+    }
+
+    private static boolean checkMarkupInCache(MarkupKey key) {
+        return markupCache.containsKey(key);
+    }
+
+    public static InlineKeyboardMarkup getMenuButtons(MarkupKey key) {
+        if (checkMarkupInCache(key)) {
+            return markupCache.get(key);
+        }
+        switch (key) {
+            case MarkupKey.LessonMenu:
+                System.out.println("Put in cache LessonMenu");
+                setLessonMenuButtons();
+                break;
+            case MarkupKey.MainMenu:
+                System.out.println("Put in cache MainMenu");
+                setMainMenuButtons();
+                break;
+        }
+        return markupCache.get(key);
     }
 
     /**
@@ -159,6 +186,7 @@ public class Messages {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
         //сохраняем значение в HashMap
+        System.out.println("Put selectYearButtons into cache");
         TelegramBot.yearsAndGroupsCache.put("Year", markup);
     }
 
@@ -177,6 +205,7 @@ public class Messages {
         keyboard.add(row);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
-        TelegramBot.yearsAndGroupsCache.put("Groups" + i, markup);
+        System.out.println("Put selectGroupButtons into cache");
+        TelegramBot.yearsAndGroupsCache.put("Group" + i, markup);
     }
 }

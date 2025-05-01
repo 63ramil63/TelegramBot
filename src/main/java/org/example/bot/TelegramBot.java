@@ -4,6 +4,7 @@ import org.example.Files.FilesAndFolders;
 import org.example.Main;
 import org.example.ParseSite;
 import org.example.database.UserRepository;
+import org.example.enums.MarkupKey;
 import org.example.messages.Messages;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
@@ -27,10 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 public class TelegramBot extends TelegramLongPollingBot {
@@ -48,8 +46,8 @@ public class TelegramBot extends TelegramLongPollingBot {
     public static int maxFileSize;
     public static String delimiter;
 
-    //newCachedThreadPool - создает пул потоков, который может создавать новые потоки по мере необходимости, но при этом повторно использовать ранее созданные потоки, если они свободны
-    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
+    //создает пул потоков, который может создавать новые потоки по мере необходимости
+    private final ExecutorService executorService = new ThreadPoolExecutor(4, 10, 60L, TimeUnit.SECONDS, new LinkedBlockingDeque<>(100));
 
     public TelegramBot() {
         loadConfig();
@@ -80,8 +78,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::close));
 
         //запуск очистки расписания если оно устарело
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(this::clearExpiredCache, duration, duration, TimeUnit.MINUTES);
+        try (ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1)) {
+            scheduler.scheduleAtFixedRate(this::clearExpiredCache, duration, duration, TimeUnit.MINUTES);
+        }
     }
 
     @Override
@@ -172,7 +171,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         //получаем информацию о нажатой кнопке
         String data = update.getCallbackQuery().getData();
-        System.out.println("User pressed button. User's chatId: " + chatId + " | CallbackQuery is: " + data);
 
         int messageId = update.getCallbackQuery().getMessage().getMessageId();
         checkCallBackData(chatId, data, messageId);
@@ -279,29 +277,30 @@ public class TelegramBot extends TelegramLongPollingBot {
             String fileId = document.getFileId();
             String filePath = execute(new GetFile(fileId)).getFilePath();
             //обращение к TelegramAPI для получения инфы о файле
-            String fullFilePath = "https://api.telegram.org/file/bot" + bot_token + "/" + filePath;
             //открываем поток для чтения
-            InputStream is = new URL(fullFilePath).openStream();
-            String fileName = document.getFileName();
-            System.out.println("User sends DOCUMENT. User id is " + chatId + " - filename is: " + fileName);
-            //получаем расширение файла(используем +1, чтобы получить расширение файла без точки)
-            String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
+            try (InputStream is = new URL("https://api.telegram.org/file/bot" + bot_token + "/" + filePath).openStream()) {
+                String fileName = document.getFileName();
+                System.out.println("User sends DOCUMENT. User id is " + chatId + " - filename is: " + fileName);
+                //получаем расширение файла(используем +1, чтобы получить расширение файла без точки)
+                String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
 
-            //проверяем расширение файла
-            if (allowedExtensions.contains(extension)) {
-                //если пользователь отправил файл с описанием, то записываем описание в название файла
-                //копируем файл из потока в путь
-                if (text != null) {
-                    Files.copy(is, Paths.get(selectedPath + delimiter + text + '.' + extension));
+                //проверяем расширение файла
+                if (allowedExtensions.contains(extension)) {
+                    //если пользователь отправил файл с описанием, то записываем описание в название файла
+                    //копируем файл из потока в путь
+                    if (text != null) {
+                        Files.copy(is, Paths.get(selectedPath + delimiter + text + '.' + extension));
+                    } else {
+                        Files.copy(is, Paths.get(selectedPath + delimiter + fileName));
+                    }
+                    sendNewMessageResponse(chatId, "/fileSaved");
                 } else {
-                    Files.copy(is, Paths.get(selectedPath + delimiter + fileName));
+                    sendNewMessageResponse(chatId, "/extensionErr");
                 }
-                sendNewMessageResponse(chatId, "/fileSaved");
-            }else {
-                sendNewMessageResponse(chatId, "/extensionErr");
+            } catch (IOException e) {
+                System.out.println(e);
             }
-            is.close();
-        } catch (TelegramApiException | IOException e) {
+        } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
     }
@@ -336,24 +335,24 @@ public class TelegramBot extends TelegramLongPollingBot {
                 break;
 
             case "/start":
-                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Выберите функцию");
+                Messages.sendMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatid, "Выберите функцию");
                 execute(message);
                 break;
 
             case "/error":
-                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Произошла ошибка(");
+                Messages.sendMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatid, "Произошла ошибка(");
                 execute(message);
                 break;
 
             case "/sqlError":
-                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Ошибка! Пожалуйста напиши боту /start");
+                Messages.sendMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatid, "Ошибка! Пожалуйста напиши боту /start");
                 execute(message);
                 break;
 
             default:
                 //добавляем папку
                 filesAndFolders.addFolderAsync(data);
-                Messages.sendMessage(message, Messages.setMainMenuButtons(), chatid, "Директория создана");
+                Messages.sendMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatid, "Директория создана");
                 execute(message);
                 UserRepository.setCanAddFolder(chatid, (byte) 0);
                 break;
@@ -384,7 +383,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         switch (data) {
             case "/help":
-                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Напишите /start, если что-то сломалось \n" +
+                Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatId, "Напишите /start, если что-то сломалось \n" +
                         "Чтобы сохранить файл, выберите путь и скиньте файл боту" +
                         "Старайтесь не делать названия файлов и директории слишком большими, бот может дать сбой \n" +
                         "Если столкнулись с проблемой, напишите в личку @wrotoftanks63");
@@ -392,7 +391,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
 
             case "LessonButtonPressed":
-                Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Выберите дату");
+                Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.LessonMenu), chatId, "Выберите дату");
                 execute(message);
                 return;
 
@@ -419,7 +418,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
 
             case "BackButtonPressed":
-                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Выберите функцию");
+                Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatId, "Выберите функцию");
                 execute(message);
                 return;
 
@@ -429,12 +428,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
 
             case "AddFolderButtonPressed":
-                Messages.editMessage(message, Messages.setMainMenuButtons(), chatId, "Напишите название директории \n пишите без спец.символов");
+                Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatId, "Напишите название директории \n пишите без спец.символов");
                 execute(message);
                 UserRepository.setCanAddFolder(chatId, (byte) 1);
                 return;
 
             case "SelectYearButtonPressed":
+                System.out.println("yearsAndGroupsCache.containsKey(Year)" + yearsAndGroupsCache.containsKey("Year"));
                 if (!yearsAndGroupsCache.containsKey("Year")) {
                     Messages.setSelectYearButtons();
                 }
@@ -466,15 +466,16 @@ public class TelegramBot extends TelegramLongPollingBot {
             num = num.replace("Year", "");
             int number = Integer.parseInt(num);
 
-            //проверяем есть ли в HashMap нкжные нам значения
+            //проверяем есть ли в HashMap нужные нам значения
             if (!yearsAndGroupsCache.containsKey("Group" + number)) {
                 //получаем группы и сохраняем в yearsAndGroupsCache
                 Messages.setGroupSelectButtons(number);
             }
 
             //получаем из кэша группы
-            Messages.editMessage(message, yearsAndGroupsCache.get("Groups" + number), chatId, "Выберите группу");
+            Messages.editMessage(message, yearsAndGroupsCache.get("Group" + number), chatId, "Выберите группу");
             execute(message);
+            System.out.println("Size of yearsAndGroupsCache ---------- " + yearsAndGroupsCache.size());
         } else if (data.contains("Group")) {
             //получаем индекс начала Group
             int index = data.indexOf("Group");
@@ -486,13 +487,13 @@ public class TelegramBot extends TelegramLongPollingBot {
             //устанавливаем значение setObj
             UserRepository.setObj(chatId, group);
 
-            Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, "Группа сохранена");
+            Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.LessonMenu), chatId, "Группа сохранена");
             execute(message);
         }
     }
 
     //проверяем расписание, сохраненное в lessonCache
-    private void getCachedLessons(EditMessageText message, long chatId, String obj, boolean today) throws TelegramApiException, IOException{
+    private void getCachedLessons(EditMessageText message, long chatId, String obj, boolean today) throws IOException{
         //проверяем актуальность расписания
         if (!(lessonsCache.containsKey(obj) && !lessonsCache.get(obj).isExpired())) {
             //парсим расписание с сайта
@@ -500,15 +501,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
         //получаем расписание либо на сегодня, либо на завтра
         if (today) {
-            Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj).lessonsToday);
+            Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.LessonMenu), chatId, lessonsCache.get(obj).lessonsToday.intern());
         } else {
-            Messages.editMessage(message, Messages.setLessonMenuButtons(), chatId, lessonsCache.get(obj).lessonsTomorrow);
+            Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.LessonMenu), chatId, lessonsCache.get(obj).lessonsTomorrow.intern());
         }
     }
 
 
     //получение расписания на сегодня
-    private boolean getLessons(String obj) throws IOException {
+    private void getLessons(String obj) throws IOException {
         //проверяем есть ли в кэше значение
         if (lessonsCache.containsKey(obj) && lessonsCache.get(obj).isExpired()) {
             lessonsCache.remove(obj);
@@ -524,8 +525,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         //устанавливаем значения для lessonsCache
         lessonsCache.put(obj, new CachedLessons(lessonsToday, lessonsTomorrow, duration));
-        System.out.println("Lessons saved in cache to Obj = " + obj);
-        return true;
     }
 
     @Override
@@ -539,7 +538,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     public void clearExpiredCache () {
+        System.out.println("CacheSize ------------------------ " + lessonsCache.size());
+        lessonsCache.forEach((obj, v) -> System.out.println("lessonsCache contains: " + obj));
         lessonsCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
+        System.out.println("CacheSizeAfterClean -------------- " + lessonsCache.size());
+        lessonsCache.forEach((obj, v) -> System.out.println("lessonsCache contains: " + obj));
     }
 
     private static class CachedLessons {

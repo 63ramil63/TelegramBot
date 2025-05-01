@@ -23,6 +23,7 @@ public class FilesAndFolders {
 
     public FilesAndFolders() {
         executorService = Executors.newFixedThreadPool(10);
+        Runtime.getRuntime().addShutdownHook(new Thread(executorService::close));
     }
 
     /**
