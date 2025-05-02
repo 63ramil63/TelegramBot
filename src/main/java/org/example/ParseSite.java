@@ -109,16 +109,15 @@ public class ParseSite {
             Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
             Elements _lesson = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(4)");
             num++;
-            lesson.append("\n").append(_number.text().intern()).append(") ").append(_time.text().intern()).append(" ").append(_lesson.text().intern());
+            lesson.append("\n").append(_number.text().intern()).append(") ").append(_time.text().intern()).append(" ").append(_lesson.text());
         }
-
         //переводим StringBuilder в String
         String lessons = lesson.toString();
         //удаление всех пробелов в конце строки, убираем лишний '(', убираем наименование места
-        lessons = lessons.replaceAll("\\s+$", "").intern();
-        lessons = lessons.substring(0, lessons.length() - 1).intern();
-        lessons = lessons.replaceAll("Московское шоссе, 120", "").intern();
-        lessons = lessons.replaceAll(" Замена Свободное время на:", "").intern();
+        lessons = lessons.replaceAll("\\s+$", "");
+        lessons = lessons.substring(0, lessons.length() - 1);
+        lessons = lessons.replaceAll("Московское шоссе, 120", "");
+        lessons = lessons.replaceAll(" Замена Свободное время на:", "");
         return lessons;
     }
 
