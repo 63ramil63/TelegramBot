@@ -37,6 +37,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final HashMap<String, CachedLessons> lessonsCache = new HashMap<>();
     public static HashMap<String, InlineKeyboardMarkup> yearsAndGroupsCache = new HashMap<>();
     private FilesAndFolders filesAndFolders;
+    private UserRepository userRepository;
 
     private String bot_token;
     private String bot_name;
@@ -81,7 +82,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         System.out.println("scheduler is " + scheduler.isShutdown());
         scheduler.scheduleAtFixedRate(this::clearExpiredCache, duration, duration, TimeUnit.MINUTES);
-
+        Runtime.getRuntime().addShutdownHook(new Thread(scheduler::close));
     }
 
     @Override
@@ -102,8 +103,8 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void checkAndAddUser(long chatId) {
-        if (!UserRepository.getUser(chatId)) {
-            UserRepository.addUser(chatId);
+        if (!userRepository.getUser(chatId)) {
+            userRepository.addUser(chatId);
         }
     }
 
@@ -168,7 +169,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         checkAndAddUser(chatId);
 
         //удаление статуса создания папки
-        UserRepository.setCanAddFolder(chatId, (byte) 0);
+        userRepository.setCanAddFolder(chatId, (byte) 0);
 
         //получаем информацию о нажатой кнопке
         String data = update.getCallbackQuery().getData();
@@ -186,10 +187,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         checkAndAddUser(chatId);
 
         //удаление статуса создания папки
-        UserRepository.setCanAddFolder(chatId, (byte) 0);
+        userRepository.setCanAddFolder(chatId, (byte) 0);
 
         //получаем путь к папке, которую выбрал пользователь
-        String selectedPath = UserRepository.getFilePath(chatId);
+        String selectedPath = userRepository.getFilePath(chatId);
 
         //проверяем не пусто ли значение выбранной папки пользователя
         if (!selectedPath.isEmpty()) {
@@ -225,15 +226,15 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 
         //проверка есть ли пользователь в бд
-        if (!UserRepository.getUser(chatId)) {
+        if (!userRepository.getUser(chatId)) {
             String userName = update.getMessage().getChat().getUserName();
             String firstName = update.getMessage().getChat().getFirstName();
             String lastName = update.getMessage().getChat().getLastName();
 
             //добавляем пользователя в бд, если его нет
-            UserRepository.addUser(chatId);
-            UserRepository.setUserName(chatId, userName);
-            UserRepository.setUserFullName(chatId, firstName + " " + lastName);
+            userRepository.addUser(chatId);
+            userRepository.setUserName(chatId, userName);
+            userRepository.setUserFullName(chatId, firstName + " " + lastName);
             System.out.println("Adding user SUCCESSFUL. User's chatId is " + chatId);
         }
 
@@ -253,7 +254,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         checkAndAddUser(chatId);
 
         //проверяем, хочет ли пользователь добавить новую папку
-        boolean canAddFolder = UserRepository.getCanAddFolder(chatId);
+        boolean canAddFolder = userRepository.getCanAddFolder(chatId);
         if (canAddFolder) {
             try {
                 sendNewMessageResponse(chatId, text);
@@ -355,7 +356,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 filesAndFolders.addFolderAsync(data);
                 Messages.sendMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatid, "Директория создана");
                 execute(message);
-                UserRepository.setCanAddFolder(chatid, (byte) 0);
+                userRepository.setCanAddFolder(chatid, (byte) 0);
                 break;
         }
     }
@@ -397,7 +398,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
 
             case "TodayLessonsButtonPressed":
-                String obj = UserRepository.getObj(chatId);
+                String obj = userRepository.getObj(chatId);
                 //проверка, есть ли у пользователя значение obj в бд
                 if(hasObj(message, chatId, messageID, obj)) {
                     getCachedLessons(message, chatId, obj, true);
@@ -408,7 +409,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
 
             case "TomorrowLessonsButtonPressed":
-                String obj1 = UserRepository.getObj(chatId);
+                String obj1 = userRepository.getObj(chatId);
                 //проверка, есть ли у пользователя значение obj в бд
                 if(hasObj(message, chatId, messageID, obj1)) {
                     getCachedLessons(message, chatId, obj1, false);
@@ -431,13 +432,14 @@ public class TelegramBot extends TelegramLongPollingBot {
             case "AddFolderButtonPressed":
                 Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.MainMenu), chatId, "Напишите название директории \n пишите без спец.символов");
                 execute(message);
-                UserRepository.setCanAddFolder(chatId, (byte) 1);
+                userRepository.setCanAddFolder(chatId, (byte) 1);
                 return;
 
             case "SelectYearButtonPressed":
                 System.out.println("yearsAndGroupsCache.containsKey(Year)" + yearsAndGroupsCache.containsKey("Year"));
                 if (!yearsAndGroupsCache.containsKey("Year")) {
-                    Messages.setSelectYearButtons();
+                    Messages messages = new Messages();
+                    messages.setSelectYearButtons();
                 }
                 Messages.editMessage(message, yearsAndGroupsCache.get("Year"), chatId, "Выберите курс");
                 execute(message);
@@ -457,7 +459,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             String correctPath = path + path1;
 
             //устанавливаем путь к директории
-            UserRepository.setFilePath(chatId, correctPath);
+            userRepository.setFilePath(chatId, correctPath);
         } else if (data.contains("Year")) {
             //получаем индекс начала Year
             int index = data.indexOf("Year");
@@ -470,7 +472,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             //проверяем есть ли в HashMap нужные нам значения
             if (!yearsAndGroupsCache.containsKey("Group" + number)) {
                 //получаем группы и сохраняем в yearsAndGroupsCache
-                Messages.setGroupSelectButtons(number);
+                Messages messages = new Messages();
+                messages.setGroupSelectButtons(number);
             }
 
             //получаем из кэша группы
@@ -486,7 +489,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             group = group.replace("Group=", "");
 
             //устанавливаем значение setObj
-            UserRepository.setObj(chatId, group);
+            userRepository.setObj(chatId, group);
 
             Messages.editMessage(message, Messages.getMenuButtons(MarkupKey.LessonMenu), chatId, "Группа сохранена");
             execute(message);
@@ -516,13 +519,15 @@ public class TelegramBot extends TelegramLongPollingBot {
             lessonsCache.remove(obj);
         }
 
+        ParseSite parseSite = new ParseSite();
+
         //получаем и форматируем дату на сегодняшнюю дату и завтрашнюю
         LocalDate localDate = LocalDate.now();
         String today = localDate.format(dateTimeFormatter);
         LocalDate localDateTomorrow = LocalDate.now().plusDays(1);
         String tomorrow = localDateTomorrow.format(dateTimeFormatter);
-        String lessonsToday = ParseSite.getDay(today, obj);
-        String lessonsTomorrow = ParseSite.getDay(tomorrow, obj);
+        String lessonsToday = parseSite.getDay(today, obj);
+        String lessonsTomorrow = parseSite.getDay(tomorrow, obj);
 
         //устанавливаем значения для lessonsCache
         lessonsCache.put(obj, new CachedLessons(lessonsToday, lessonsTomorrow, duration));

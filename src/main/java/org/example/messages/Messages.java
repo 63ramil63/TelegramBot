@@ -76,8 +76,7 @@ public class Messages {
      * @return row with buttons that you added to the method
      */
     public static List<InlineKeyboardButton> setRow(InlineKeyboardButton ... buttons) {
-        List<InlineKeyboardButton> row = new ArrayList<>(Arrays.asList(buttons));
-        return row;
+        return new ArrayList<>(Arrays.asList(buttons));
     }
 
     /**
@@ -87,13 +86,13 @@ public class Messages {
      */
     public static InlineKeyboardButton setButton(String text, String callBackData) {
         InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(text.intern());
-        button.setCallbackData(callBackData.intern());
+        button.setText(text);
+        button.setCallbackData(callBackData);
         return button;
     }
 
 
-    private static void setLessonMenuButtons() {
+    private void setLessonMenuButtons() {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
         //создание кнопок и добавление к ним возвращаемого значения при нажатии
@@ -111,10 +110,11 @@ public class Messages {
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
+        System.out.println("Put in MarkupCache LessonsMenuBtn");
         markupCache.put(MarkupKey.LessonMenu, markup);
     }
 
-    private static void setMainMenuButtons() {
+    private void setMainMenuButtons() {
         //создание кнопки и установка текста и возвращаемого значения при нажатии
         InlineKeyboardButton lessonButton = setButton("Расписание", "LessonButtonPressed");
         InlineKeyboardButton fileButton = setButton("Файлы", "FileButtonPressed");
@@ -129,6 +129,7 @@ public class Messages {
         //создание самого объекта клавиатуры, к которому все добавляем
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
+        System.out.println("Put in MarkupCache MainMenuBtn");
         markupCache.put(MarkupKey.MainMenu, markup);
     }
 
@@ -140,14 +141,16 @@ public class Messages {
         if (checkMarkupInCache(key)) {
             return markupCache.get(key);
         }
+        Messages messages = new Messages();
         switch (key) {
             case MarkupKey.LessonMenu:
-                setLessonMenuButtons();
+                messages.setLessonMenuButtons();
                 break;
             case MarkupKey.MainMenu:
-                setMainMenuButtons();
+                messages.setMainMenuButtons();
                 break;
         }
+        System.out.println(markupCache.size());
         return markupCache.get(key);
     }
 
@@ -156,7 +159,7 @@ public class Messages {
      * @param indexValue - substring that will be used to set correct value to button like 'Group' or 'Year'
      * @return row with button
      */
-    private static List<InlineKeyboardButton> setRow(String text, String indexValue) {
+    private List<InlineKeyboardButton> setRow(String text, String indexValue) {
         int index = text.indexOf(indexValue);
         //индекс, который указывает на element
         String num = text.substring(index);
@@ -171,9 +174,10 @@ public class Messages {
     /**
      * Get keyboard to select year of study
      */
-    public static void setSelectYearButtons() throws IOException {
+    public void setSelectYearButtons() throws IOException {
+        ParseSite parseSite = new ParseSite();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        List<String> years = ParseSite.getYear();
+        List<String> years = parseSite.getYear();
         for (String year : years) {
             keyboard.add(setRow(year, "Year"));
         }
@@ -190,9 +194,10 @@ public class Messages {
     /**
      * Get keyboard to select group
      */
-    public static void setGroupSelectButtons(int i) throws IOException {
+    public void setGroupSelectButtons(int i) throws IOException {
+        ParseSite parseSite = new ParseSite();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        List<String> groups = ParseSite.getGroups(i);
+        List<String> groups = parseSite.getGroups(i);
         for (String group : groups) {
             keyboard.add(setRow(group, "Group"));
         }

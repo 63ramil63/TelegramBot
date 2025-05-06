@@ -10,14 +10,14 @@ import java.util.List;
 
 
 public class ParseSite {
-    public static String url = "https://lk.ks.psuti.ru/?mn=2&obj=";
+    public final String url = "https://lk.ks.psuti.ru/?mn=2&obj=";
 
     /**
      *
      * @param doc doc connected to the site
      * @return string(attribute) of the next week
      */
-    private static String getWK(Document doc) {
+    private String getWK(Document doc) {
         //получаем неделю
         Elements week = doc.select("body > table:nth-child(4) > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(8) > a");
         String wk = week.attr("href");
@@ -33,7 +33,7 @@ public class ParseSite {
      * @param doc doc connected to the site
      * @return string of lessons
      */
-    public static String findDay(String _day, Document doc) {
+    public String findDay(String _day, Document doc) {
         //переменная для перебора элементов с расписанием на странице
         int num = 1;
         //перебор эл сайта до нахождения нужной даты
@@ -55,13 +55,13 @@ public class ParseSite {
      * @param doc doc connected to site
      * @return true if text of elements on site contains string _day
      */
-    public static boolean match(String _day, int num, Document doc) {
+    public boolean match(String _day, int num, Document doc) {
         //перебор эл сайта до нахождения нужной даты
         Elements day = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
         return day.text().contains(_day);
     }
 
-    public static String getDay(String _day, String obj) throws IOException {
+    public String getDay(String _day, String obj) throws IOException {
         System.out.println("Parsing site for obj = " + obj);
         Document doc = Jsoup.connect(url + obj).userAgent("Chrome").timeout(10_000).get();
 
@@ -69,7 +69,6 @@ public class ParseSite {
         String lessons = findDay(_day, doc);
         if(!lessons.equals("Not found")) {
             doc.clearAttributes();
-            doc = null;
             return lessons;
         }
 
@@ -81,11 +80,9 @@ public class ParseSite {
         lessons = findDay(_day, doc);
         if(!lessons.equals("Not found")){
             doc.clearAttributes();
-            doc = null;
             return lessons;
         }
         doc.clearAttributes();
-        doc = null;
         return "Нет расписания на нужную дату \n https://lk.ks.psuti.ru/?mn=2&obj=" + obj;
     }
 
@@ -95,7 +92,7 @@ public class ParseSite {
      * @param doc doc connected to site
      * @return lessons
      */
-    public static String getLesson(int num, Document doc) {
+    public String getLesson(int num, Document doc) {
         //пропуск ненужного поля
         num++;
         Elements currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
@@ -125,7 +122,7 @@ public class ParseSite {
      *
      * @return List of String with years of study from site
      */
-    public static List<String> getYear() throws IOException {
+    public List<String> getYear() throws IOException {
         Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").timeout(10_000).get();
         List<String> years = new ArrayList<>();
         int i = 1;
@@ -148,7 +145,7 @@ public class ParseSite {
      * @param groups List of String in which method write group
      * @param i index of element in elements
      */
-    private static void getGroupElement(Elements elements, List<String> groups, int i) {
+    private void getGroupElement(Elements elements, List<String> groups, int i) {
         Elements element = elements.select("tr:nth-child(" + i + ")");
         //получаем строку в столбце
         Elements obj = element.select("td > a");
@@ -167,7 +164,7 @@ public class ParseSite {
      * @param num element number that indicates the year of study
      * @return List of String with groups in the selected year of study
      */
-    public static List<String> getGroups(int num) throws IOException {
+    public List<String> getGroups(int num) throws IOException {
         Document doc = Jsoup.connect("https://lk.ks.psuti.ru/?mn=2").userAgent("Chrome").timeout(10_000).get();
         List<String> groups = new ArrayList<>();
         Elements elementsSize = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(7) > td:nth-child(" + num + ") > table > tbody > tr:nth-child(1) > td > table > tbody > tr");

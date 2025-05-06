@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +50,11 @@ public class FilesAndFolders {
         return row;
     }
 
+
+    public List<InlineKeyboardButton> setRow(InlineKeyboardButton ... buttons) {
+        return new ArrayList<>(Arrays.asList(buttons));
+    }
+
     /**
      *
      * @param path where method will find files/folders
@@ -76,9 +82,9 @@ public class FilesAndFolders {
             //добавление различных кнопок
             if (path.equals(TelegramBot.path)) {
                 InlineKeyboardButton addFolder =  Messages.setButton("Добавить папку", "AddFolderButtonPressed");
-                keyboard.add(Messages.setRow(addFolder, back));
+                keyboard.add(setRow(addFolder, back));
             } else {
-                keyboard.add(Messages.setRow(back));
+                keyboard.add(setRow(back));
             }
             markup.setKeyboard(keyboard);
         } catch (IOException e) {

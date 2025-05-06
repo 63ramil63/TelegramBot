@@ -35,7 +35,7 @@ public class UserRepository {
         }
     }
 
-    private static String executeSQLQuery(String sql, long chatId) {
+    private String executeSQLQuery(String sql, long chatId) {
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             //устанавливаем значения для знаков ? в запросе sql
@@ -56,12 +56,12 @@ public class UserRepository {
         return "Not found";
     }
 
-    public static String getFilePath(long chatId) {
+    public String getFilePath(long chatId) {
         String sql = "select FilePath from " + tableName + " where Id=?";
         return executeSQLQuery(sql, chatId);
     }
 
-    public static boolean getUser(long chatId) {
+    public boolean getUser(long chatId) {
         String sql = "select Name from " +  tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -81,12 +81,12 @@ public class UserRepository {
         return false;
     }
 
-    public static String getObj(long chatId) {
+    public String getObj(long chatId) {
         String sql = "select Obj from " + tableName + " where Id=?";
         return executeSQLQuery(sql, chatId);
     }
 
-    public static boolean getCanAddFolder(long chatId) {
+    public boolean getCanAddFolder(long chatId) {
         String sql = "select CanAddFolder from " + tableName + " where Id=?";
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -114,7 +114,7 @@ public class UserRepository {
      * @param sql sql query
      * @param params takes params for sql query. Give params in right order in your sql query
      */
-    private static void executeSQLUpdate(String sql, Object ... params) {
+    private void executeSQLUpdate(String sql, Object ... params) {
         try (Connection connection = dataBaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             for (int i = 0; i < params.length; i++) {
@@ -136,33 +136,33 @@ public class UserRepository {
         }
     }
 
-    public static void addUser(long chatId) {
+    public void addUser(long chatId) {
         System.out.println("Add user with Id: " + chatId);
         String sql = "insert into " + tableName + " (Id) values (?)";
         executeSQLUpdate(sql, chatId);
     }
 
-    public static void setObj(long chatId, String obj) {
+    public void setObj(long chatId, String obj) {
         String sql = "update " + tableName + " set Obj=? where Id=?";
         executeSQLUpdate(sql, obj, chatId);
     }
 
-    public static void setFilePath(long chatId, String filePath) {
+    public void setFilePath(long chatId, String filePath) {
         String sql = "update " + tableName + " set FilePath=? where Id=?";
         executeSQLUpdate(sql, filePath, chatId);
     }
 
-    public static void setCanAddFolder(long chatId, byte bool) {
+    public void setCanAddFolder(long chatId, byte bool) {
         String sql = "update " + tableName + " set CanAddFolder = ? where Id =?";
         executeSQLUpdate(sql, bool, chatId);
     }
 
-    public static void setUserFullName(long chatId, String fullName) {
+    public void setUserFullName(long chatId, String fullName) {
         String sql = "update " + tableName + " set FullName=? where Id=?";
         executeSQLUpdate(sql, fullName, chatId);
     }
 
-    public static void setUserName(long chatId, String userName) {
+    public void setUserName(long chatId, String userName) {
         String sql = "update " + tableName + " set name=? where Id=?";
         executeSQLUpdate(sql, userName, chatId);
     }
