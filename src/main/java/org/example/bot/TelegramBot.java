@@ -58,6 +58,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void loadConfig() {
         Properties properties = new Properties();
         filesAndFolders = new FilesAndFolders();
+        userRepository = new UserRepository();
         try (FileInputStream fileInputStream = new FileInputStream(Main.propertyPath)) {
             properties.load(fileInputStream);
             bot_token = properties.getProperty("bot_token");
