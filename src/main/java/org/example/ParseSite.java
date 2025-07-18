@@ -86,6 +86,13 @@ public class ParseSite {
         return "Нет расписания на нужную дату \n https://lk.ks.psuti.ru/?mn=2&obj=" + obj;
     }
 
+    private String getLessonsInfo(Document doc, int num) {
+        Elements _number = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(1)");
+        Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
+        Elements _lesson = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(4)");
+        return _number + ") " + _time + " " + _lesson;
+    }
+
     /**
      *
      * @param num number of element where lessons start
@@ -102,11 +109,8 @@ public class ParseSite {
         //проверка на последний элемент расписания на день, который всегда пустой
         while (!currentElement.text().isEmpty()) {
             currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
-            Elements _number = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(1)");
-            Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
-            Elements _lesson = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(4)");
             num++;
-            lesson.append("\n").append(_number.text().intern()).append(") ").append(_time.text().intern()).append(" ").append(_lesson.text());
+            lesson.append("\n").append(getLessonsInfo(doc, num));
         }
         //переводим StringBuilder в String
         String lessons = lesson.toString();
