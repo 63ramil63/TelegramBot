@@ -90,7 +90,7 @@ public class ParseSite {
         Elements _number = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(1)");
         Elements _time = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(2)");
         Elements _lesson = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ") > td:nth-child(4)");
-        return _number + ") " + _time + " " + _lesson;
+        return _number.text() + ") " + _time.text() + " " + _lesson.text();
     }
 
     /**
@@ -108,9 +108,10 @@ public class ParseSite {
 
         //проверка на последний элемент расписания на день, который всегда пустой
         while (!currentElement.text().isEmpty()) {
-            currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
-            num++;
             lesson.append("\n").append(getLessonsInfo(doc, num));
+            num++;
+            currentElement = doc.select("body > table:nth-child(5) > tbody > tr:nth-child(" + num + ")");
+
         }
         //переводим StringBuilder в String
         String lessons = lesson.toString();
